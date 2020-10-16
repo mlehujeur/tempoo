@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Union
 import datetime
 import numpy as np
 
@@ -9,16 +11,28 @@ WEEK = 7. * DAY
 
 UTCTZINFO = datetime.timezone(datetime.timedelta(0), 'UTC')
 
+"""
+policy
+UTC + float => UTC
+UTC + datetime.timedelta => UTC
+UTC + UTC => UTC
+
+UTC - float => UTC
+UTC - datetime.timedelta => UTC
+UTC - UTC => UTC
+"""
+
 
 class UTC(datetime.datetime):
 
     def __new__(cls, year=1970, month=1, day=1,
                 hour=0, minute=0, second=0, microsecond=0):
 
-        self = super(UTC, cls).__new__(
-            cls, year=year, month=month, day=day,
+        self = super(UTC, cls).__new__(cls,
+            year=year, month=month, day=day,
             hour=hour, minute=minute,
             second=second, microsecond=microsecond,
+            # WARNING : VERY IMPORTANT ARG !!
             tzinfo=UTCTZINFO)
         return self
 
@@ -35,9 +49,6 @@ class UTC(datetime.datetime):
         return f'{self.year:04d}-{self.month:02d}-{self.day:02d}T' \
                f'{self.hour:02d}:{self.minute:02d}:{self.second:02d}.{self.microsecond:06d}Z'
 
-    def __float__(self):
-        return self.timestamp
-
     @property
     def timestamp(self):
         return datetime.datetime.timestamp(self)
@@ -52,8 +63,10 @@ class UTC(datetime.datetime):
 
     @property
     def julday(self):
-        timedelta = (self - self.flooryear)
-        julday = int(np.floor(timedelta.total_seconds() / DAY)) + 1
+        # timedelta = (self - self.flooryear)
+        # julday = int(np.floor(timedelta.total_seconds() / DAY)) + 1
+        timedelta = self.timestamp - self.flooryear.timestamp
+        julday = int(np.floor(timedelta / DAY)) + 1
         return julday
 
     @property
@@ -145,6 +158,47 @@ class UTC(datetime.datetime):
             return fd
         return UTCFromTimestamp(self.timestamp + WEEK).floorweek
 
+    def _operate(self, method, other: Union[datetime.timedelta, float]):
+        if isinstance(other, float):
+            other = datetime.timedelta(seconds=other)
+
+        elif not isinstance(other, datetime.timedelta):
+            raise TypeError(str(method), type(other))
+
+        new = method(other)
+
+        return UTC(
+            year=new.year, month=new.month, day=new.day,
+            hour=new.hour, minute=new.minute, second=new.second,
+            microsecond=new.microsecond)
+
+    def _operate(self, method, other: Union[datetime.timedelta, float, int, UTC]) -> UTC:
+
+        if isinstance(other, datetime.timedelta):
+            pass
+
+        elif isinstance(other, float) or isinstance(other, int):
+            other = datetime.timedelta(seconds=other)
+
+        elif isinstance(other, UTC):
+            other = datetime.timedelta(seconds=other.timestamp)
+
+        else:
+            raise TypeError(type(other))
+
+        new = method(other)
+
+        return UTC(
+            year=new.year, month=new.month, day=new.day,
+            hour=new.hour, minute=new.minute, second=new.second,
+            microsecond=new.microsecond)
+
+    def __add__(self, other):
+        return self._operate(method=super(UTC, self).__add__, other=other)
+
+    def __sub__(self, other):
+        return self._operate(method=super(UTC, self).__sub__, other=other)
+
 
 class UTCFromTimestamp(UTC):
     def __new__(cls, timestamp):
@@ -195,7 +249,8 @@ def months_between(t1: UTC, t2: UTC) -> list:
     if t1 >= t2:
         raise ValueError('utmin must be lower than utmax')
 
-    if (t2 - t1).total_seconds() > 50. * YEAR:
+    print(t1, t2, t2 - t1, (t2 - t1).timestamp)
+    if (t2 - t1).timestamp > 50. * YEAR:
         raise ValueError('time period too large')
 
     monthmin = t1.ceilmonth
@@ -270,7 +325,7 @@ if __name__ == '__main__':
     u2 = UTCFromTimestamp(2)
     assert u2 > u1
     dt = u2 - u1
-    print(dt.total_seconds())
+    print(dt.timestamp)
 
     print(years_between(
         UTC(2000, 2), UTC(2010, 2)))
