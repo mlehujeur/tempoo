@@ -1,5 +1,4 @@
 import setuptools
-from timetools.version import __version__
 
 
 with open("Readme.md", "r") as fh:
@@ -7,7 +6,7 @@ with open("Readme.md", "r") as fh:
 
 setuptools.setup(
     name="timetools", # Replace with your own username
-    version=__version__,
+    version="0.1",
     author="Maximilien Lehujeur",
     author_email="maximilien.lehujeur@gmail.com",
     description="",
