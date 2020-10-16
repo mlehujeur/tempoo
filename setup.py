@@ -15,4 +15,10 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="",
     packages=setuptools.find_packages(),
+    install_requires=[
+        'numpy', 'matplotlib',
+        # === optional requirements
+        # 'obspy', 'pytest',  # used for testing
+        # 'ipython'
+        ],
     scripts=["timetools/bin/doy"])
