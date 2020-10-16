@@ -1,0 +1,5 @@
+numpy
+matplotlib
+# packages needed for testing (optionnal)
+# obspy
+# pytest
