@@ -1,19 +1,14 @@
 # Timetools
 
-Download 
-```
-cd $INSTALLPATH
-conda clone https://gitlab.com/obsmax/timetools.git
-```
+Install 
+```bash 
+# cd <to/installation/path>
+git clone https://gitlab.com/obsmax/timetools.git
 
-Create the environment
-```
-conda create -n tt python=3.7 --yes
-conda activate tt
-```
+conda remove --name py37-tt --all --yes
+conda create --name py37-tt python=3.7 --yes
+conda activate py37-tt
 
-Install (editable mode)
-```
-cd $INSTALLPATH/timetools
+cd timetools 
 pip install -e .
 ```
