@@ -199,7 +199,7 @@ class MinorTimeLocator(ticker.LinearLocator):
         utmin = UTCFromTimestamp(vmin)
         utmax = UTCFromTimestamp(vmax)
 
-        duration = (utmax - utmin).total_seconds()
+        duration = float(utmax - utmin)
         # -------------------------------------------
         if duration >= 6. * 30. * DAY:
             if duration >= 100. * YEAR:
