@@ -1,5 +1,5 @@
 import datetime
-from timetools.utc import UTC, UTCFromTimestamp, UTCFromStr
+from timetools.utc import UTC, UTCFromJulday, UTCFromTimestamp, UTCFromStr
 import numpy as np
 import pytest
 import os
@@ -121,6 +121,28 @@ def test_utc_sub():
 
     with pytest.raises(TypeError):
         utc1 - object()
+
+
+def test_julian_utc_new():
+    for t, s, y, m, d, jd, wd, h, mn, sc, ms in \
+            zip(TIMESTAMPS, TIMESTRINGS, YEARS, MONTHS, DAYS, JULDAYS, WEEKDAYS,
+                HOURS, MINUTES, SECONDS, MICROSECONDS):
+
+        utc_new = UTCFromJulday(
+            year=y, julday=jd, hour=h, minute=mn, second=sc, microsecond=ms)
+
+        assert isinstance(utc_new, UTCFromJulday)
+        assert utc_new.year == y
+        assert utc_new.month == m
+        assert utc_new.day == d
+        assert utc_new.julday == jd
+        assert utc_new.weekday == wd
+        assert utc_new.hour == h
+        assert utc_new.minute == mn
+        assert utc_new.second == sc
+        assert utc_new.microsecond == ms
+        assert utc_new.timestamp == t
+        assert str(utc_new) == s
 
 
 def test_utc_from_timestamp_new():

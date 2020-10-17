@@ -28,7 +28,8 @@ class UTC(datetime.datetime):
     def __new__(cls, year=1970, month=1, day=1,
                 hour=0, minute=0, second=0, microsecond=0):
 
-        self = super(UTC, cls).__new__(cls,
+        self = super(UTC, cls).__new__(
+            cls,
             year=year, month=month, day=day,
             hour=hour, minute=minute,
             second=second, microsecond=microsecond,
@@ -198,6 +199,38 @@ class UTC(datetime.datetime):
 
     def __sub__(self, other):
         return self._operate(method=super(UTC, self).__sub__, other=other)
+
+
+class UTCFromJulday(UTC):
+    def __new__(cls, year=1970, julday=1,
+                hour=0, minute=0, second=0, microsecond=0):
+
+        if not isinstance(julday, int) and not isinstance(julday, np.int64):
+            raise TypeError(type(julday))
+
+        first_day_of_year_same_clock = UTC(
+            year, month=1, day=1,
+            hour=hour, minute=minute,
+            second=second, microsecond=microsecond)
+
+        end_of_year = UTC(year+1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_julday_of_year = (end_of_year - 12. * HOUR).julday
+
+        if not 1 <= julday <= last_julday_of_year:
+            raise ValueError(
+                f'in year {year}, '
+                f'julday must be between 1 and {last_julday_of_year}, '
+                f'got {julday}')
+
+        utc = (first_day_of_year_same_clock + (julday - 1) * DAY)
+
+        self = super(UTCFromJulday, cls).__new__(
+            cls,
+            year=utc.year, month=utc.month, day=utc.day,
+            hour=utc.hour, minute=utc.minute, second=utc.second,
+            microsecond=utc.microsecond)
+
+        return self
 
 
 class UTCFromTimestamp(UTC):
