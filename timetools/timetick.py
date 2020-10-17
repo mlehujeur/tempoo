@@ -15,7 +15,7 @@ class MajorTimeLocator(ticker.LinearLocator):
         utmin = UTCFromTimestamp(vmin)
         utmax = UTCFromTimestamp(vmax)
 
-        duration = (utmax - utmin).total_seconds()
+        duration = float(utmax - utmin)
 
         # ----------------------------------------------
         if duration >= 1. * YEAR:
