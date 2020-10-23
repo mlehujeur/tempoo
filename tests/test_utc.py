@@ -1,6 +1,7 @@
 import datetime
 from timetools.utc import UTC, UTCFromJulday, UTCFromTimestamp, UTCFromStr
 import numpy as np
+import pickle
 import pytest
 import os
 
@@ -183,3 +184,104 @@ def test_utc_from_str_new():
         assert utc_new.microsecond == ms
         assert utc_new.timestamp == t
         assert str(utc_new) == s
+
+
+# pickling is a very important feature for multiprocessing
+# these tests ensure that pickling-unpickling is safe for all objects
+def test_getstate():
+    utc = UTC(1234, 5, 6, 7, 8, 9, 123456)
+    state = utc.__getstate__()
+    assert state == (1234, 5, 6, 7, 8, 9, 123456)
+
+
+def test_pickle_utc():
+    for t, s, y, m, d, jd, wd, h, mn, sc, ms in \
+            zip(TIMESTAMPS, TIMESTRINGS, YEARS, MONTHS, DAYS, JULDAYS, WEEKDAYS,
+                HOURS, MINUTES, SECONDS, MICROSECONDS):
+
+        utc = UTC(year=y, month=m, day=d, hour=h, minute=mn, second=sc, microsecond=ms)
+
+        pkl = pickle.dumps(utc)
+        del utc
+        utc = pickle.loads(pkl)
+
+        assert utc.year == y
+        assert utc.month == m
+        assert utc.day == d
+        assert utc.julday == jd
+        assert utc.weekday == wd
+        assert utc.hour == h
+        assert utc.minute == mn
+        assert utc.second == sc
+        assert utc.microsecond == ms
+        assert utc.timestamp == t
+        assert str(utc) == s
+
+
+def test_pickle_utc_from_julday():
+    for t, s, y, m, d, jd, wd, h, mn, sc, ms in \
+            zip(TIMESTAMPS, TIMESTRINGS, YEARS, MONTHS, DAYS, JULDAYS, WEEKDAYS,
+                HOURS, MINUTES, SECONDS, MICROSECONDS):
+
+        utc = UTCFromJulday(year=y, julday=jd, hour=h, minute=mn, second=sc, microsecond=ms)
+        pkl = pickle.dumps(utc)
+        del utc
+        utc = pickle.loads(pkl)
+        assert utc.year == y
+        assert utc.month == m
+        assert utc.day == d
+        assert utc.julday == jd
+        assert utc.weekday == wd
+        assert utc.hour == h
+        assert utc.minute == mn
+        assert utc.second == sc
+        assert utc.microsecond == ms
+        assert utc.timestamp == t
+        assert str(utc) == s
+
+
+def test_pickle_utc_from_timestamp():
+    for t, s, y, m, d, jd, wd, h, mn, sc, ms in \
+            zip(TIMESTAMPS, TIMESTRINGS, YEARS, MONTHS, DAYS, JULDAYS, WEEKDAYS,
+                HOURS, MINUTES, SECONDS, MICROSECONDS):
+
+        utc = UTCFromTimestamp(t)
+        pkl = pickle.dumps(utc)
+        del utc
+        utc = pickle.loads(pkl)
+        assert utc.year == y
+        assert utc.month == m
+        assert utc.day == d
+        assert utc.julday == jd
+        assert utc.weekday == wd
+        assert utc.hour == h
+        assert utc.minute == mn
+        assert utc.second == sc
+        assert utc.microsecond == ms
+        assert utc.timestamp == t
+        assert str(utc) == s
+
+
+def test_pickle_utc_from_str():
+    for t, s, y, m, d, jd, wd, h, mn, sc, ms in \
+            zip(TIMESTAMPS, TIMESTRINGS, YEARS, MONTHS, DAYS, JULDAYS, WEEKDAYS,
+                HOURS, MINUTES, SECONDS, MICROSECONDS):
+        utc = UTCFromStr(s)
+        pkl = pickle.dumps(utc)
+        del utc
+        utc = pickle.loads(pkl)
+        assert utc.year == y
+        assert utc.month == m
+        assert utc.day == d
+        assert utc.julday == jd
+        assert utc.weekday == wd
+        assert utc.hour == h
+        assert utc.minute == mn
+        assert utc.second == sc
+        assert utc.microsecond == ms
+        assert utc.timestamp == t
+        assert str(utc) == s
+
+
+
+

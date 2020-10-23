@@ -28,7 +28,14 @@ class UTC(datetime.datetime):
     def __new__(cls, year=1970, month=1, day=1,
                 hour=0, minute=0, second=0, microsecond=0):
 
-        self = super(UTC, cls).__new__(
+        if isinstance(year, (bytes, str)):
+            # pickle support by datetime.datetime
+            # year might be a byte object and month corresponds to tzinfo
+            d = datetime.datetime(year, month)
+            year, month, day, hour, minute, second, microsecond = \
+                d.year, d.month, d.day, d.hour, d.minute, d.second, d.microsecond
+
+        self = super().__new__(
             cls,
             year=year, month=month, day=day,
             hour=hour, minute=minute,
@@ -38,13 +45,17 @@ class UTC(datetime.datetime):
         return self
 
     def __getstate__(self):
-        return {"year": self.year,
-                "month": self.month,
-                "day": self.day,
-                "hour": self.hour,
-                "minute": self.minute,
-                "second": self.second,
-                "microsecond": self.microsecond}
+        return (self.year, self.month, self.day,
+                self.hour, self.minute, self.second,
+                self.microsecond)
+
+    # def __setstate__(self, state):
+    #     NO : cannot init self since the initation is done in __new__
+    #     year, month, day, hour, minute, second, microsecond = state
+    #     UTC.__init__(self,
+    #         year=year, month=month, day=day,
+    #         hour=hour, minute=minute, second=second,
+    #         microsecond=microsecond)
 
     def __str__(self):
         return f'{self.year:04d}-{self.month:02d}-{self.day:02d}T' \
@@ -205,6 +216,12 @@ class UTCFromJulday(UTC):
     def __new__(cls, year=1970, julday=1,
                 hour=0, minute=0, second=0, microsecond=0):
 
+        if isinstance(year, (bytes, str)):
+            # pickle support by datetime.datetime
+            d = UTC(year, julday)
+            year, julday, hour, minute, second, microsecond = \
+                d.year, d.julday, d.hour, d.minute, d.second, d.microsecond
+
         if not isinstance(julday, int) and not isinstance(julday, np.int64):
             raise TypeError(type(julday))
 
@@ -234,7 +251,13 @@ class UTCFromJulday(UTC):
 
 
 class UTCFromTimestamp(UTC):
-    def __new__(cls, timestamp):
+    def __new__(cls, timestamp, *_args):
+
+        if isinstance(timestamp, (bytes, str)):
+            # pickle support by datetime.datetime
+            d = datetime.datetime(timestamp, *_args)
+            timestamp = d.timestamp()
+
         # d = datetime.datetime.fromtimestamp(timestamp - HOUR)   # ????
         d = datetime.datetime.fromtimestamp(timestamp, tz=UTCTZINFO)   # ????
         self = UTC.__new__(
@@ -245,7 +268,12 @@ class UTCFromTimestamp(UTC):
 
 
 class UTCFromStr(UTC):
-    def __new__(cls, string):
+    def __new__(cls, string, *_args):
+
+        if isinstance(string, (bytes)):
+            # pickle support by datetime.datetime
+            d = UTC(string, *_args)
+            string = str(d)
 
         yyyymtdd, hhmnssnnnnnnZ = string.split('T')
         yyyy, mt, dd = yyyymtdd.split('-')

@@ -29,6 +29,10 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="",
     packages=setuptools.find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: Linux"],
+    python_requires='>=3.7',
     install_requires=[
         'numpy', 'matplotlib', 'pytest'],
     scripts=["timetools/bin/doy"])
