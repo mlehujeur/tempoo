@@ -20,6 +20,9 @@ UTC + UTC => UTC
 UTC - float => UTC
 UTC - datetime.timedelta => UTC
 UTC - UTC => UTC
+
+min([utc1, utc2]) => utc
+max([utc1, utc2]) => utc
 """
 
 
@@ -57,9 +60,20 @@ class UTC(datetime.datetime):
     #         hour=hour, minute=minute, second=second,
     #         microsecond=microsecond)
 
+    def ymd(self) -> str:
+        return datetime.datetime.strftime(self, '%Y.%m.%d')
+
+    def ymdhmsms(self) -> str:
+        return datetime.datetime.strftime(self, '%Y.%m.%d.%H.%M.%S.%f')
+
+    def yjh(self) -> str:
+        return datetime.datetime.strftime(self, '%Y.%j.%H')
+
+    def yjhmsms(self) -> str:
+        return datetime.datetime.strftime(self, '%Y.%j.%H.%M.%S.%f')
+
     def __str__(self):
-        return f'{self.year:04d}-{self.month:02d}-{self.day:02d}T' \
-               f'{self.hour:02d}:{self.minute:02d}:{self.second:02d}.{self.microsecond:06d}Z'
+        return datetime.datetime.strftime(self, '%Y-%m-%dT%H:%M:%S.%fZ')
 
     @property
     def timestamp(self):
@@ -75,11 +89,11 @@ class UTC(datetime.datetime):
 
     @property
     def julday(self):
-        # timedelta = (self - self.flooryear)
-        # julday = int(np.floor(timedelta.total_seconds() / DAY)) + 1
-        timedelta = self.timestamp - self.flooryear.timestamp
-        julday = int(np.floor(timedelta / DAY)) + 1
-        return julday
+        return datetime.datetime.timetuple(self).tm_yday
+        # old
+        # timedelta = self.timestamp - self.flooryear.timestamp
+        # julday = int(np.floor(timedelta / DAY)) + 1
+        # return julday
 
     @property
     def flooryear(self):
