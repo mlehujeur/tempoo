@@ -32,7 +32,7 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: Linux"],
-    python_requires='3.7',
+    python_requires='>=3.7, <3.8',
     install_requires=[
         'numpy', 'matplotlib', 'pytest'],
     scripts=["timetools/bin/doy"])
