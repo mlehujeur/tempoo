@@ -9,14 +9,14 @@ YEAR = 365.25 * DAY
 
 
 class MajorTimeLocator(ticker.LinearLocator):
-    """the crappiest code I ever wrote, but works, so ..."""
+    """TODO : clean up"""
 
     def tick_values(self, vmin, vmax):
         utmin = UTCFromTimestamp(vmin)
         utmax = UTCFromTimestamp(vmax)
 
         duration = float(utmax - utmin)
-
+        print(vmin, vmax, duration)
         # ----------------------------------------------
         if duration >= 1. * YEAR:
             if duration >= 100. * YEAR:
@@ -188,7 +188,7 @@ class MajorTimeLocator(ticker.LinearLocator):
             xticks = [t.timestamp for t in years] + list(seconds)
 
         else:
-            xticks = []
+            xticks = super().tick_values(vmin, vmax)
 
         return np.unique(xticks)
 

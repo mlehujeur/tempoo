@@ -184,19 +184,19 @@ class UTC(datetime.datetime):
             return fd
         return UTCFromTimestamp(self.timestamp + WEEK).floorweek
 
-    def _operate(self, method, other: Union[datetime.timedelta, float]):
-        if isinstance(other, float):
-            other = datetime.timedelta(seconds=other)
-
-        elif not isinstance(other, datetime.timedelta):
-            raise TypeError(str(method), type(other))
-
-        new = method(other)
-
-        return UTC(
-            year=new.year, month=new.month, day=new.day,
-            hour=new.hour, minute=new.minute, second=new.second,
-            microsecond=new.microsecond)
+    # def _operate(self, method, other: Union[datetime.timedelta, float]):
+    #     if isinstance(other, float):
+    #         other = datetime.timedelta(seconds=other)
+    # 
+    #     elif not isinstance(other, datetime.timedelta):
+    #         raise TypeError(str(method), type(other))
+    # 
+    #     new = method(other)
+    # 
+    #     return UTC(
+    #         year=new.year, month=new.month, day=new.day,
+    #         hour=new.hour, minute=new.minute, second=new.second,
+    #         microsecond=new.microsecond)
 
     def _operate(self, method, other: Union[datetime.timedelta, float, int, UTC]) -> UTC:
 
@@ -213,11 +213,11 @@ class UTC(datetime.datetime):
             raise TypeError(type(other))
 
         new = method(other)
-
-        return UTC(
+        utc = UTC(
             year=new.year, month=new.month, day=new.day,
             hour=new.hour, minute=new.minute, second=new.second,
             microsecond=new.microsecond)
+        return utc
 
     def __add__(self, other):
         return self._operate(method=super(UTC, self).__add__, other=other)
