@@ -16,7 +16,7 @@ class MajorTimeLocator(ticker.LinearLocator):
         utmax = UTCFromTimestamp(vmax)
 
         duration = float(utmax - utmin)
-        print(vmin, vmax, duration)
+
         # ----------------------------------------------
         if duration >= 1. * YEAR:
             if duration >= 100. * YEAR:
@@ -188,7 +188,7 @@ class MajorTimeLocator(ticker.LinearLocator):
             xticks = [t.timestamp for t in years] + list(seconds)
 
         else:
-            xticks = super().tick_values(vmin, vmax)
+            xticks = super(MajorTimeLocator, self).tick_values(vmin, vmax)
 
         return np.unique(xticks)
 
@@ -342,7 +342,7 @@ class MinorTimeLocator(ticker.LinearLocator):
             xticks = [t.timestamp for t in years] + list(seconds)
 
         else:
-            xticks = []
+            xticks = super(MinorTimeLocator, self).tick_values(vmin, vmax)
 
         return np.unique(xticks)
 
