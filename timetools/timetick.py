@@ -188,6 +188,7 @@ class MajorTimeLocator(ticker.LinearLocator):
             xticks = [t.timestamp for t in years] + list(seconds)
 
         else:
+            # back to the default locator
             xticks = super(MajorTimeLocator, self).tick_values(vmin, vmax)
 
         return np.unique(xticks)
