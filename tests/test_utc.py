@@ -66,6 +66,17 @@ def test_utc_julday():
         assert utc_new.julday == jd
 
 
+def test_utc_from_decimal_year_new():
+    for t, s, y, m, d, jd, wd, h, mn, sc, ms in \
+            zip(TIMESTAMPS, TIMESTRINGS, YEARS, MONTHS, DAYS, JULDAYS, WEEKDAYS,
+                HOURS, MINUTES, SECONDS, MICROSECONDS):
+
+        utc_new = UTC(year=y, month=m, day=d, hour=h, minute=mn, second=sc, microsecond=ms)
+        decimal_year = utc_new.decimal_year
+        assert utc_new.flooryear.year == int(decimal_year)
+        assert utc_new.ceilyear.year - 1 == int(decimal_year)
+
+
 def test_utc_add():
     i, j = np.array(np.random.rand(2) * len(TIMESTAMPS), int)
 

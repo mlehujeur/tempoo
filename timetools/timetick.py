@@ -1,4 +1,5 @@
 from matplotlib import ticker
+from matplotlib.ticker import AutoLocator
 from timetools.utc import *
 import numpy as np
 
@@ -6,371 +7,211 @@ MINUTE = 60.
 HOUR = 60. * MINUTE
 DAY = 24. * HOUR
 YEAR = 365.25 * DAY
+MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 
-class MajorTimeLocator(ticker.LinearLocator):
-    """TODO : clean up"""
+class YearTicker(object):
+    """
+    An object to find "nice" tick positions in a given year
+    """
+    def __init__(self, year: int):
+        self.year_int: int = year
+        self.year_start_utc: UTC = UTC(year=self.year_int, month=1, day=1, hour=0)
+        self.year_end_utc: UTC = UTC(year=self.year_int + 1, month=1, day=1, hour=0)
+        self.year_start_timestamp: float = self.year_start_utc.timestamp
+        self.year_end_timestamp: float = self.year_end_utc.timestamp
 
-    def tick_values(self, vmin, vmax):
-        utmin = UTCFromTimestamp(vmin)
-        utmax = UTCFromTimestamp(vmax)
+    def months(self) -> list:
+        """list the month timestamps in this year"""
+        return [UTC(year=self.year_int, month=m, day=1, hour=0).timestamp
+                for m in range(1, 13)]
 
-        duration = float(utmax - utmin)
+    def mondays(self) -> list:
+        """list the monday timestamps in this year"""
+        t = self.year_start_utc
+        mondays = []
+        while t < self.year_end_utc:
+            if t.weekday == 0:
+                mondays.append(t.timestamp)
+            t += 24. * 3600.
+        return mondays
 
-        # ----------------------------------------------
-        if duration >= 1. * YEAR:
-            if duration >= 100. * YEAR:
-                yearmin = int(100. * (utmin.flooryear.year / 100))
-                yearmax = utmax.ceilyear.year
-                xticks = [UTC(year=y, month=1, day=1, hour=0).timestamp
-                          for y in np.arange(yearmin, yearmax, 20)]
+    def days(self) -> list:
+        """list the day timestamps in this year"""
+        last_day_of_year = (self.year_end_utc - 12. * 3600.).julday
+        return [UTCFromJulday(year=self.year_int, julday=j, hour=0).timestamp
+                for j in range(1, last_day_of_year)]
 
-            elif duration >= 40. * YEAR:
-                yearmin = int(10. * (utmin.flooryear.year / 10))
-                yearmax = utmax.ceilyear.year
-                xticks = [UTC(year=y, month=1, day=1, hour=0).timestamp
-                          for y in np.arange(yearmin, yearmax, 10)]
+    @staticmethod
+    def add_to_ticks(old_ticks, new_ticks, start_timestamp, end_timestamp):
+        """update a list of ticks (timestamps) between two dates"""
+        ticks = np.hstack((old_ticks, new_ticks))
+        ticks = np.unique(ticks)
+        ticks = ticks[(ticks >= start_timestamp) & (ticks <= end_timestamp)]
+        return ticks
 
-            elif duration >= 15. * YEAR:
-                yearmin = int(5. * (utmin.flooryear.year / 5))
-                yearmax = utmax.ceilyear.year
-                xticks = [UTC(year=y, month=1, day=1, hour=0).timestamp
-                          for y in np.arange(yearmin, yearmax, 5)]
+    def ticks(self, start_timestamp: float, end_timestamp: float):
+        """
+        an generator which returns a list of tick values (timestamps)
+        between two times.
+        each iteration of the generator increases the precision
+        user needs to close the generator when he has reached the desired level of precision
+        """
+        ticks = []
 
-            elif duration >= 5. * YEAR:
-                yearmin = int(2. * (utmin.flooryear.year / 2))
-                yearmax = utmax.ceilyear.year
-                xticks = [UTC(year=y, month=1, day=1, hour=0).timestamp
-                          for y in np.arange(yearmin, yearmax, 2)]
+        assert start_timestamp < end_timestamp
+        # ==== window outside this year?
+        if end_timestamp < self.year_start_timestamp or \
+           start_timestamp > self.year_end_timestamp:
+            # window not in this year
+            while True:
+                yield ticks
 
-            elif duration >= 3. * YEAR:
-                years = years_between(utmin, utmax)
-                xticks = [t.timestamp for t in years]
+        # ==== do not overlap the previous or next years
+        start_timestamp = max([self.year_start_timestamp, start_timestamp])
+        end_timestamp = min([self.year_end_timestamp, end_timestamp])
+        assert self.year_start_timestamp <= start_timestamp < end_timestamp <= self.year_end_timestamp, \
+            (str(UTCFromTimestamp(self.year_start_timestamp)),
+             str(UTCFromTimestamp(start_timestamp)),
+             str(UTCFromTimestamp(end_timestamp)),
+             str(UTCFromTimestamp(self.year_end_timestamp)))
 
-            else:  # if duration >= 1. * YEAR:
-                years = years_between(utmin, utmax)
-                days = days_between(utmin, utmax, step=100)
-                xticks = [t.timestamp for t in years + days]
-
-        # ----------------------------------------------
-        elif duration >= 2. * DAY:
-            if duration >= 6. * 30. * DAY:
-                years = years_between(utmin, utmax)
-                days = days_between(utmin, utmax, step=50)
-                xticks = [t.timestamp for t in years + days]
-
-            elif duration >= 2. * 30. * DAY:
-                years = years_between(utmin, utmax)
-                days = days_between(utmin, utmax, step=20)
-                xticks = [t.timestamp for t in years + days]
-
-            elif duration >= 15. * DAY:
-                years = years_between(utmin, utmax)
-                days = days_between(utmin, utmax, step=5)
-                xticks = [t.timestamp for t in years + days]
-
-            elif duration >= 5. * DAY:
-                years = years_between(utmin, utmax)
-                days = days_between(utmin, utmax, step=2)
-                xticks = [t.timestamp for t in years + days]
-
-            else:  # if duration >= 2. * DAY:
-                years = years_between(utmin, utmax)
-                days = days_between(utmin, utmax, step=1)
-                xticks = [t.timestamp for t in years + days]
-
-        # ----------------------------------------------
-        elif duration >= HOUR:
-            if duration >= 30. * HOUR:
-                years = years_between(utmin, utmax)
-                hours = hours_between(utmin, utmax, step=12)
-                xticks = [t.timestamp for t in years + hours]
-
-            elif duration >= 15. * HOUR:
-                years = years_between(utmin, utmax)
-                hours = hours_between(utmin, utmax, step=6)
-                xticks = [t.timestamp for t in years + hours]
-
-            elif duration >= 5. * HOUR:
-                years = years_between(utmin, utmax)
-                hours = hours_between(utmin, utmax, step=2)
-                xticks = [t.timestamp for t in years + hours]
-
-            elif duration >= 2. * HOUR:
-                years = years_between(utmin, utmax)
-                hours = hours_between(utmin, utmax, step=1)
-                xticks = [t.timestamp for t in years + hours]
-
-            else:  # if duration >= HOUR:
-                years = years_between(utmin, utmax)
-                minutes = minutes_between(utmin, utmax, step=30)
-                xticks = [t.timestamp for t in years + minutes]
-
-        # ----------------------------------------------
-        elif duration >= 10.:
-            if duration >= 15. * MINUTE:
-                years = years_between(utmin, utmax)
-                minutes = minutes_between(utmin, utmax, step=5)
-                xticks = [t.timestamp for t in years + minutes]
-
-            elif duration >= 5. * MINUTE:
-                years = years_between(utmin, utmax)
-                minutes = minutes_between(utmin, utmax, step=2)
-                xticks = [t.timestamp for t in years + minutes]
-
-            elif duration >= 2. * MINUTE:
-                years = years_between(utmin, utmax)
-                minutes = minutes_between(utmin, utmax, step=1)
-                xticks = [t.timestamp for t in years + minutes]
-
-            elif duration >= MINUTE:
-                years = years_between(utmin, utmax)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp + 1., 20.)
-                xticks = [y.timestamp for y in years] + list(seconds)
-
-            elif duration >= 20.:
-                years = years_between(utmin, utmax)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 10.)
-                xticks = [y.timestamp for y in years] + list(seconds)
-
-            else:  # if duration >= 10.:
-                years = years_between(utmin, utmax)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 5.)
-                xticks = [y.timestamp for y in years] + list(seconds)
-
-        # ----------------------------------------------
-        elif duration >= 5.:
-            years = years_between(utmin, utmax)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 2.)
-            xticks = [y.timestamp for y in years] + list(seconds)
-
-        elif duration >= 2.:
-            years = years_between(utmin, utmax)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 1.)
-            xticks = [y.timestamp for y in years] + list(seconds)
-
-        elif duration >= 1.:
-            years = years_between(utmin, utmax)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .5)
-            xticks = [y.timestamp for y in years] + list(seconds)
-
-        elif duration >= .5:
-            years = years_between(utmin, utmax)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .25)
-            xticks = [y.timestamp for y in years] + list(seconds)
-
-        elif duration >= .2:
-            years = years_between(utmin, utmax)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .1)
-            xticks = [t.timestamp for t in years] + list(seconds)
-
-        elif duration >= .1:
-            years = years_between(utmin, utmax)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .05)
-            xticks = [t.timestamp for t in years] + list(seconds)
-
-        else:
-            # back to the default locator
-            xticks = super(MajorTimeLocator, self).tick_values(vmin, vmax)
-
-        return np.unique(xticks)
-
-
-class MinorTimeLocator(ticker.LinearLocator):
-
-    def tick_values(self, vmin, vmax):
-        utmin = UTCFromTimestamp(vmin)
-        utmax = UTCFromTimestamp(vmax)
-
-        duration = float(utmax - utmin)
-        # -------------------------------------------
-        if duration >= 6. * 30. * DAY:
-            if duration >= 100. * YEAR:
-                yearmin = int(100. * (utmin.flooryear.year / 100))
-                yearmax = utmax.ceilyear.year
-                xticks = [UTC(year=y, month=1, day=1, hour=0).timestamp
-                          for y in np.arange(yearmin, yearmax, 10)]
-
-            elif duration >= 5. * YEAR:
-                yearmin = int(2. * (utmin.flooryear.year / 2))
-                yearmax = utmax.ceilyear.year
-                xticks = [UTC(year=y, month=1, day=1, hour=0).timestamp
-                          for y in np.arange(yearmin, yearmax, 1)]
-
-            elif duration >= 2. * YEAR:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                months = months_between(utmin, utmax)
-                xticks = [t.timestamp for t in years + months] 
-
-            else:  # if duration >= 6. * 30. * DAY:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                days = days_between(utmin, utmax, step=10)
-                xticks = [t.timestamp for t in years + days]   
-
-        # -------------------------------------------
-        elif duration >= 15. * HOUR:
-            if duration >= 2. * 30. * DAY:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                days = days_between(utmin, utmax, step=5)
-                xticks = [t.timestamp for t in years + days] 
-
-            elif duration >= 15. * DAY:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                days = days_between(utmin, utmax, step=1)
-                xticks = [t.timestamp for t in years + days]
-
-            elif duration >= 5. * DAY:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                hours = hours_between(utmin, utmax, step=12)
-                xticks = [t.timestamp for t in years + hours]
-
-            elif duration >= 2. * DAY:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                hours = hours_between(utmin, utmax, step=2)
-                xticks = [t.timestamp for t in years + hours]
-
-            else:  # if duration >= 15. * HOUR:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                hours = hours_between(utmin, utmax, step=1)
-                xticks = [t.timestamp for t in years + hours]
-
-        # -------------------------------------------
-        elif duration >= HOUR:
-            if duration >= 5. * HOUR:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                minutes = minutes_between(utmin, utmax, step=30)
-                xticks = [t.timestamp for t in years + minutes]
-
-            elif duration >= 2. * HOUR:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                minutes = minutes_between(utmin, utmax, step=10)
-                xticks = [t.timestamp for t in years + minutes]
-
-            else:  # if duration >= HOUR:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                minutes = minutes_between(utmin, utmax, step=5)
-                xticks = [t.timestamp for t in years + minutes]
-
-        # -------------------------------------------
-        elif duration >= 10.:
-            if duration >= 15. * MINUTE:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                minutes = minutes_between(utmin, utmax, step=1)
-                xticks = [t.timestamp for t in years + minutes]
-                return np.unique(xticks)
-
-            elif duration >= 5. * MINUTE:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 30.)
-                xticks = [t.timestamp for t in years] + list(seconds)
-                return np.unique(xticks)
-
-            elif duration >= 2. * MINUTE:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 5.)
-                xticks = [t.timestamp for t in years] + list(seconds)
-
-            elif duration >= MINUTE:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 2.)
-                xticks = [t.timestamp for t in years] + list(seconds)
-
-            elif duration >= 20.:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, 1.)
-                xticks = [t.timestamp for t in years] + list(seconds)
-
+        # ==== year precision
+        for prec in [1000, 500, 100, 50, 20, 10, 5, 2]:
+            if self.year_int % prec:
+                yield []  # avoid not round years first
             else:
-                years = years_between(utmin.flooryear, utmax.ceilyear)
-                secondmin = utmin.floorminute
-                secondmax = utmax.ceilminute
-                seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .5)
-                xticks = [t.timestamp for t in years] + list(seconds)
+                # this is a round year according to precision
+                ticks = [self.year_start_timestamp]
+                yield ticks
 
-        # -------------------------------------------
-        elif duration >= 2.:
-            years = years_between(utmin.flooryear, utmax.ceilyear)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .1)
-            xticks = [t.timestamp for t in years] + list(seconds)
+        # ==== month precision
+        months = self.months()
+        for prec in [6, 3, 1]:
+            ticks = self.add_to_ticks(ticks, months[::prec], start_timestamp, end_timestamp)
+            yield ticks
 
-        elif duration >= .5:
-            years = years_between(utmin.flooryear, utmax.ceilyear)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .05)
-            xticks = [t.timestamp for t in years] + list(seconds)
+        # ==== week precision
+        mondays = self.mondays()
+        for prec in [2, 1]:
+            ticks = self.add_to_ticks(ticks, mondays[::prec], start_timestamp, end_timestamp)
+            yield ticks
 
-        elif duration >= .2:
-            years = years_between(utmin.flooryear, utmax.ceilyear)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .025)
-            xticks = [t.timestamp for t in years] + list(seconds)
+        # ==== day precision
+        days = self.days()
+        for prec in [1]:
+            ticks = self.add_to_ticks(ticks, days[::prec], start_timestamp, end_timestamp)
+            yield ticks
 
-        elif duration >= .1:
-            years = years_between(utmin.flooryear, utmax.ceilyear)
-            secondmin = utmin.floorminute
-            secondmax = utmax.ceilminute
-            seconds = np.arange(secondmin.timestamp, secondmax.timestamp, .01)
-            xticks = [t.timestamp for t in years] + list(seconds)
+        # ===========
+        # ==== hour precision
+        # no need to get all the hours in the year
+        floorday_start_timestamp = UTCFromTimestamp(start_timestamp).floorday.timestamp
+        ceilday_end_timestamp = UTCFromTimestamp(end_timestamp).ceilday.timestamp
 
-        else:
-            xticks = super(MinorTimeLocator, self).tick_values(vmin, vmax)
+        # do not overlap with the next year or previous year
+        floorday_start_timestamp = max([self.year_start_timestamp, floorday_start_timestamp])
+        ceilday_end_timestamp = min([self.year_end_timestamp, ceilday_end_timestamp])
+        assert floorday_start_timestamp < ceilday_end_timestamp
 
-        return np.unique(xticks)
+        hours = np.arange(floorday_start_timestamp, ceilday_end_timestamp + 1., 3600.)
+        for prec in [12, 6, 3, 1]:
+            ticks = self.add_to_ticks(ticks, hours[::prec], start_timestamp, end_timestamp)
+            yield ticks
+
+        minutes = np.arange(floorday_start_timestamp, ceilday_end_timestamp + 1., 60.)
+        for prec in [30, 10, 2, 1]:
+            ticks = self.add_to_ticks(ticks, minutes[::prec], start_timestamp, end_timestamp)
+            yield ticks
+
+        seconds = np.arange(floorday_start_timestamp, ceilday_end_timestamp + 1., 1.)
+        for prec in [30, 10, 2, 1]:
+            ticks = self.add_to_ticks(ticks, seconds[::prec], start_timestamp, end_timestamp)
+            yield ticks
+
+        ticks = self.add_to_ticks(
+            ticks, AutoLocator().tick_values(start_timestamp, end_timestamp),
+            start_timestamp, end_timestamp)
+        yield ticks
+
+
+class TimeLocator(ticker.LinearLocator):
+    def __init__(self, maxticks=5):
+        self.maxticks = maxticks
+
+    def tick_values(self, vmin: float, vmax: float):
+        """
+        return nice tick locations between two dates (timestamps)
+        """
+        utmin = UTCFromTimestamp(vmin)
+        utmax = UTCFromTimestamp(vmax)
+
+        tick_generators = []
+        for year in range(utmin.flooryear.year, utmax.ceilyear.year + 1):
+            # initiate one tick generator per year between the two boundary dates
+            tick_generator = YearTicker(year).ticks(vmin, vmax)
+            tick_generators.append(tick_generator)
+
+        ticks = []  # to store the tick positions (timestamps)
+        while True:
+            try:
+                # prepare the next list of ticks (with one more level of accuracy)
+                next_ticks = []
+                for tick_generator in tick_generators:
+                    year_ticks = next(tick_generator)  # get the next of list of ticks for this year
+                    next_ticks.append(year_ticks)
+                next_ticks = list(np.hstack(next_ticks))
+                if len(ticks) and len(next_ticks) > self.maxticks:
+                    # if the desired level of accuracy has been exceeded
+                    break
+                ticks = next_ticks  # move to new level of accuracy
+
+            except StopIteration as err:
+                # max accuracy reached for at least one year.
+                break
+
+        for tick_generator in tick_generators:
+            tick_generator.close()
+
+        # qc
+        # print()
+        # for _ in ticks:
+        #     print(str(UTCFromTimestamp(_)))
+
+        return ticks
 
 
 def TimeFormatter(timevalue, tickposition=None):
 
     utime = UTCFromTimestamp(timevalue)
 
-    if utime.microsecond:
-        return f"{utime.hour:02d}:" \
-               f"{utime.minute:02d}:" \
-               f"{utime.second + 1e-6 * utime.microsecond:04.2f}".rstrip('0')
+    if timevalue % 1.0:
+        # return f"{utime.hour:02d}:" \
+        #        f"{utime.minute:02d}:" \
+        #        f"{utime.second:02d}." + \
+        #        f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
+        return f'{utime.second:02d}.' + \
+               f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
 
     elif utime.second:
-        return f"{utime.hour:02d}:" \
-               f"{utime.minute:02d}:" \
-               f"{utime.second:02d}"
+        # return f"{utime.hour:02d}:" \
+        #        f"{utime.minute:02d}:" \
+        #        f"{utime.second:02d}"
+        return f"{utime.minute:02d}':" \
+               f'{utime.second:02d}"'
 
     elif utime.minute:
         return f"{utime.hour:02d}:" \
-               f"{utime.minute:02d}"
+               f"{utime.minute:02d}'"
 
     elif utime.hour:
-        return f"{utime.hour:02d}:00"
+        return f"{utime.hour:02d}:00'"
+
+    elif utime.day != 1:
+        return f"{utime.day:02d}"
 
     elif utime.julday != 1:
-        return f"{utime.julday:03d}"
+        return MONTHS[utime.month - 1]
 
     elif utime.year != 1970:
         return f"{utime.year:04d}"
@@ -379,24 +220,24 @@ def TimeFormatter(timevalue, tickposition=None):
         return "0"
 
 
-def timetick(ax, axis='x', major=True, minor=True):
-
-    M = MajorTimeLocator()
-    m = MinorTimeLocator()
+def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxticks=20):
+    """
+    set the tick locators and formatters for time data
+    """
 
     if 'x' in axis:
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(TimeFormatter))
         if major:
-            ax.xaxis.set_major_locator(M)
+            ax.xaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
         if minor:
-            ax.xaxis.set_minor_locator(m)
+            ax.xaxis.set_minor_locator(TimeLocator(maxticks=minor_maxticks))
 
     if 'y' in axis:
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(TimeFormatter))
         if major:
-            ax.yaxis.set_major_locator(M)
+            ax.yaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
         if minor:
-            ax.yaxis.set_minor_locator(m)
+            ax.yaxis.set_minor_locator(TimeLocator(maxticks=minor_maxticks))
 
 
 if __name__ == '__main__':
@@ -405,6 +246,7 @@ if __name__ == '__main__':
     start = UTC(2018, 1, 20)
     end = UTC(2018, 2, 3)
     t = np.linspace(start.timestamp, end.timestamp, 100)
-    plt.plot(t, t * 0, 'ko')
-    timetick(plt.gca(), 'x')
+    plt.plot(t, t, 'ko')
+    timetick(plt.gca(), 'xy')
+    plt.gca().grid(True, linestyle=":")
     plt.show()

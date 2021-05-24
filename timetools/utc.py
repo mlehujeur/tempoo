@@ -81,7 +81,7 @@ class UTC(datetime.datetime):
 
     def __float__(self):
         return self.timestamp
-
+        
     @property
     def weekday(self):
         # 0 = Monday
@@ -108,6 +108,18 @@ class UTC(datetime.datetime):
         return UTC(year=self.year+1, month=1, day=1,
                    hour=0, minute=0, second=0, microsecond=0)
 
+    @property
+    def decimal_year(self):
+        """WARNING: microsecond accuracy may be lost"""
+        timestamp = self.timestamp
+        flooryear = self.flooryear
+        flooryear_timestamp = flooryear.timestamp
+        ceilyear_timestamp = self.ceilyear.timestamp
+        d1 = np.float128(timestamp - flooryear_timestamp)
+        d2 = np.float128(ceilyear_timestamp - flooryear_timestamp)
+        decimal_year = flooryear.year + d1 / d2
+        return decimal_year
+    
     @property
     def floormonth(self):
         return UTC(year=self.year, month=self.month, day=1,
@@ -300,6 +312,11 @@ class UTCFromStr(UTC):
         return self
 
 
+class UTCFromDecimalYear(UTCFromTimestamp):
+    def __new__(cls, decimal_year: float, *_args):
+        raise Exception('accuracy lost')
+
+
 def years_between(t1: UTC, t2: UTC) -> list:
     """bounds included"""
     if t1 >= t2:
@@ -317,9 +334,9 @@ def months_between(t1: UTC, t2: UTC) -> list:
     if t1 >= t2:
         raise ValueError('utmin must be lower than utmax')
 
-    print(t1, t2, t2 - t1, (t2 - t1).timestamp)
-    if (t2 - t1).timestamp > 50. * YEAR:
-        raise ValueError('time period too large')
+    # print(t1, t2, t2 - t1, (t2 - t1).timestamp)
+    # if (t2 - t1).timestamp > 50. * YEAR:
+    #     raise ValueError('time period too large')
 
     monthmin = t1.ceilmonth
     monthmax = t2.floormonth
