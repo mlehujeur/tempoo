@@ -243,10 +243,11 @@ def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxt
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    start = UTC(2018, 1, 20)
-    end = UTC(2018, 2, 3)
-    t = np.linspace(start.timestamp, end.timestamp, 100)
+    start = UTC(2018, 1, 1)
+    end = UTC(2020, 1, 1)
+    t = np.linspace(start.timestamp, end.timestamp, 2)
     plt.plot(t, t, 'ko')
     timetick(plt.gca(), 'xy')
+    plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
     plt.gca().grid(True, linestyle=":")
     plt.show()
