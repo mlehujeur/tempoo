@@ -1,3 +1,4 @@
+from functools import lru_cache
 from matplotlib import ticker
 from matplotlib.ticker import AutoLocator
 from timetools.utc import *
@@ -181,8 +182,8 @@ class TimeLocator(ticker.LinearLocator):
         return ticks
 
 
+@lru_cache(maxsize=None)
 def TimeFormatter(timevalue, tickposition=None):
-
     utime = UTCFromTimestamp(timevalue)
 
     if timevalue % 1.0:
@@ -190,34 +191,38 @@ def TimeFormatter(timevalue, tickposition=None):
         #        f"{utime.minute:02d}:" \
         #        f"{utime.second:02d}." + \
         #        f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
-        return f'{utime.second:02d}.' + \
-               f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
+        ans = f'{utime.second:02d}.' + \
+              f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
 
     elif utime.second:
         # return f"{utime.hour:02d}:" \
         #        f"{utime.minute:02d}:" \
         #        f"{utime.second:02d}"
-        return f"{utime.minute:02d}':" \
-               f'{utime.second:02d}"'
+        ans = f"{utime.minute:02d}':" \
+              f'{utime.second:02d}"'
 
     elif utime.minute:
-        return f"{utime.hour:02d}:" \
-               f"{utime.minute:02d}'"
+        ans = f"{utime.hour:02d}:" \
+              f"{utime.minute:02d}'"
 
     elif utime.hour:
-        return f"{utime.hour:02d}:00'"
+        ans = f"{utime.hour:02d}:00'"
 
     elif utime.day != 1:
-        return f"{utime.day:02d}"
+        ans = f"{utime.day:02d}"
+        # if tickposition == 0:
+        #     ans += "\n" + MONTHS[utime.month - 1]
 
     elif utime.julday != 1:
-        return MONTHS[utime.month - 1]
+        ans = MONTHS[utime.month - 1]
 
     elif utime.year != 1970:
-        return f"{utime.year:04d}"
+        ans = f"{utime.year:04d}"
 
     else:
-        return "0"
+        ans = "0"
+
+    return ans
 
 
 def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxticks=20):
@@ -248,6 +253,6 @@ if __name__ == '__main__':
     t = np.linspace(start.timestamp, end.timestamp, 2)
     plt.plot(t, t, 'ko')
     timetick(plt.gca(), 'xy')
-    plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
+    # plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
     plt.gca().grid(True, linestyle=":")
     plt.show()
