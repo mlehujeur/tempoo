@@ -186,13 +186,15 @@ class TimeLocator(ticker.LinearLocator):
 def TimeFormatter(timevalue, tickposition=None):
     utime = UTCFromTimestamp(timevalue)
 
-    if timevalue % 1.0:
+    dec = timevalue % 1.0
+    if dec:
         # return f"{utime.hour:02d}:" \
         #        f"{utime.minute:02d}:" \
         #        f"{utime.second:02d}." + \
         #        f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
-        ans = f'{utime.second:02d}.' + \
-              f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
+        # ans = f'{utime.second:02d}.' + \
+        #       f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
+        ans = f'{utime.second + round(dec, 9)}'
 
     elif utime.second:
         # return f"{utime.hour:02d}:" \
