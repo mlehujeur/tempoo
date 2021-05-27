@@ -1,9 +1,8 @@
 from functools import lru_cache
 from matplotlib import ticker
-from matplotlib.ticker import AutoLocator
+from matplotlib.ticker import MaxNLocator, AutoLocator, AutoMinorLocator
 from timetools.utc import *
 import numpy as np
-from matplotlib.ticker import MaxNLocator
 
 MINUTE = 60.
 HOUR = 60. * MINUTE
@@ -279,26 +278,26 @@ def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(tf))
 
         if major:
-            ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
+            # ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
+            ax.xaxis.set_major_locator(AutoLocator())
 
         if minor:
-            ax.xaxis.set_minor_locator(MaxNLocator(minor_maxticks))
+            ax.xaxis.set_minor_locator(AutoMinorLocator())
 
         if isinstance(fill_label, str):
             ax.set_xlabel(ax.get_xlabel() + fill_label)
 
     if 'y' in axis:
-        ax.set_ylabel(ax.get_xlabel() + fill_label)
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(tf))
 
         if major:
-            ax.yaxis.set_major_locator(MaxNLocator(major_maxticks))
+            ax.yaxis.set_major_locator(AutoLocator())
 
         if minor:
-            ax.yaxis.set_minor_locator(MaxNLocator(minor_maxticks))
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         if isinstance(fill_label, str):
-            ax.set_xlabel(ax.get_xlabel() + fill_label)
+            ax.set_ylabel(ax.get_xlabel() + fill_label)
 
 
 def MicroTimeFormatter(timevalue, tickposition=None):
@@ -321,26 +320,25 @@ def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
         ax.xaxis.set_major_formatter(ticker.FuncFormatter(tf))
 
         if major:
-            ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
+            ax.xaxis.set_major_locator(AutoLocator()) # MaxNLocator(major_maxticks))
 
         if minor:
-            ax.xaxis.set_minor_locator(MaxNLocator(minor_maxticks))
+            ax.xaxis.set_minor_locator(AutoMinorLocator()) #MaxNLocator(minor_maxticks))
 
         if isinstance(fill_label, str):
             ax.set_xlabel(ax.get_xlabel() + fill_label)
 
     if 'y' in axis:
-        ax.set_ylabel(ax.get_xlabel() + fill_label)
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(tf))
 
         if major:
-            ax.yaxis.set_major_locator(MaxNLocator(major_maxticks))
+            ax.yaxis.set_major_locator(AutoLocator())
 
         if minor:
-            ax.yaxis.set_minor_locator(MaxNLocator(minor_maxticks))
+            ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         if isinstance(fill_label, str):
-            ax.set_xlabel(ax.get_xlabel() + fill_label)
+            ax.set_ylabel(ax.get_xlabel() + fill_label)
 
 
 if __name__ == '__main__':
