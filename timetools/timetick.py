@@ -3,6 +3,7 @@ from matplotlib import ticker
 from matplotlib.ticker import AutoLocator
 from timetools.utc import *
 import numpy as np
+from matplotlib.ticker import MaxNLocator
 
 MINUTE = 60.
 HOUR = 60. * MINUTE
@@ -20,7 +21,7 @@ class YearTicker(object):
         self.year_start_utc: UTC = UTC(year=self.year_int, month=1, day=1, hour=0)
         self.year_end_utc: UTC = UTC(year=self.year_int + 1, month=1, day=1, hour=0)
         self.year_start_timestamp: float = self.year_start_utc.timestamp
-        self.year_end_timestamp: float = self.year_end_utc.timestamp
+        self.year_end_timestamp: float = self.year_end_utc.timestamp - 1e-9
 
     def months(self) -> list:
         """list the month timestamps in this year"""
@@ -144,6 +145,12 @@ class TimeLocator(ticker.LinearLocator):
         """
         return nice tick locations between two dates (timestamps)
         """
+        if vmin < 0:
+            # this method does not work well for negative times
+            # but if the user displays negative times
+            # then it is likely not usefull to display dates
+            return AutoLocator().tick_values(vmin, vmax)
+
         utmin = UTCFromTimestamp(vmin)
         utmax = UTCFromTimestamp(vmax)
 
@@ -161,6 +168,7 @@ class TimeLocator(ticker.LinearLocator):
                 for tick_generator in tick_generators:
                     year_ticks = next(tick_generator)  # get the next of list of ticks for this year
                     next_ticks.append(year_ticks)
+                    # print('**', next_ticks)
                 next_ticks = list(np.hstack(next_ticks))
                 if len(ticks) and len(next_ticks) > self.maxticks:
                     # if the desired level of accuracy has been exceeded
@@ -177,7 +185,7 @@ class TimeLocator(ticker.LinearLocator):
         # qc
         # print()
         # for _ in ticks:
-        #     print(str(UTCFromTimestamp(_)))
+        #     print(str(UTCFromTimestamp(_)), TimeFormatter(_))
 
         return ticks
 
@@ -185,6 +193,11 @@ class TimeLocator(ticker.LinearLocator):
 @lru_cache(maxsize=None)
 def TimeFormatter(timevalue, tickposition=None):
     utime = UTCFromTimestamp(timevalue)
+
+    if timevalue < 0.:
+        # problem with negative times (before 1970)
+        ans = f'{round(timevalue,9)}'
+        return ans
 
     dec = timevalue % 1.0
     if dec:
@@ -245,6 +258,89 @@ def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxt
             ax.yaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
         if minor:
             ax.yaxis.set_minor_locator(TimeLocator(maxticks=minor_maxticks))
+
+
+def MilliTimeFormatter(timevalue, tickposition=None):
+    timevalue = round(timevalue * 1e3, 9)
+
+    ans = f"{timevalue}"  # nice number representation
+
+    if timevalue and "." in ans:
+        ans = ans.rstrip('0').rstrip('.')
+
+    ans += "$_{ms}$"  # I fear the plot is mis understood otherwhise
+    return ans
+
+
+def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=" [ms]"):
+    tf = MilliTimeFormatter
+
+    if 'x' in axis:
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(tf))
+
+        if major:
+            ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
+
+        if minor:
+            ax.xaxis.set_major_locator(MaxNLocator(minor_maxticks))
+
+        if isinstance(fill_label, str):
+            ax.set_xlabel(ax.get_xlabel() + fill_label)
+
+    if 'y' in axis:
+        ax.set_ylabel(ax.get_xlabel() + fill_label)
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(tf))
+
+        if major:
+            ax.yaxis.set_major_locator(MaxNLocator(major_maxticks))
+
+        if minor:
+            ax.yaxis.set_major_locator(MaxNLocator(minor_maxticks))
+
+        if isinstance(fill_label, str):
+            ax.set_xlabel(ax.get_xlabel() + fill_label)
+
+
+def MicroTimeFormatter(timevalue, tickposition=None):
+    timevalue = round(timevalue * 1e6, 9)
+
+    ans = f"{timevalue}"  # nice number representation
+
+    if timevalue and "." in ans:
+        ans = ans.rstrip('0').rstrip('.')
+
+    ans += "$_{\mu s}$"  # I fear the plot is mis understood otherwhise
+
+    return ans
+
+
+def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=" [$\mu s$]"):
+    tf = MicroTimeFormatter
+
+    if 'x' in axis:
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(tf))
+
+        if major:
+            ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
+
+        if minor:
+            ax.xaxis.set_major_locator(MaxNLocator(minor_maxticks))
+
+        if isinstance(fill_label, str):
+            ax.set_xlabel(ax.get_xlabel() + fill_label)
+
+    if 'y' in axis:
+        ax.set_ylabel(ax.get_xlabel() + fill_label)
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(tf))
+
+        if major:
+            ax.yaxis.set_major_locator(MaxNLocator(major_maxticks))
+
+        if minor:
+            ax.yaxis.set_major_locator(MaxNLocator(minor_maxticks))
+
+        if isinstance(fill_label, str):
+            ax.set_xlabel(ax.get_xlabel() + fill_label)
 
 
 if __name__ == '__main__':
