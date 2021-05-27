@@ -282,7 +282,7 @@ def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
             ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
 
         if minor:
-            ax.xaxis.set_major_locator(MaxNLocator(minor_maxticks))
+            ax.xaxis.set_minor_locator(MaxNLocator(minor_maxticks))
 
         if isinstance(fill_label, str):
             ax.set_xlabel(ax.get_xlabel() + fill_label)
@@ -295,7 +295,7 @@ def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
             ax.yaxis.set_major_locator(MaxNLocator(major_maxticks))
 
         if minor:
-            ax.yaxis.set_major_locator(MaxNLocator(minor_maxticks))
+            ax.yaxis.set_minor_locator(MaxNLocator(minor_maxticks))
 
         if isinstance(fill_label, str):
             ax.set_xlabel(ax.get_xlabel() + fill_label)
@@ -324,7 +324,7 @@ def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
             ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
 
         if minor:
-            ax.xaxis.set_major_locator(MaxNLocator(minor_maxticks))
+            ax.xaxis.set_minor_locator(MaxNLocator(minor_maxticks))
 
         if isinstance(fill_label, str):
             ax.set_xlabel(ax.get_xlabel() + fill_label)
@@ -337,7 +337,7 @@ def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
             ax.yaxis.set_major_locator(MaxNLocator(major_maxticks))
 
         if minor:
-            ax.yaxis.set_major_locator(MaxNLocator(minor_maxticks))
+            ax.yaxis.set_minor_locator(MaxNLocator(minor_maxticks))
 
         if isinstance(fill_label, str):
             ax.set_xlabel(ax.get_xlabel() + fill_label)
