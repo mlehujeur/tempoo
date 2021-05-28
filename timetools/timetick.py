@@ -297,7 +297,7 @@ def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
             ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         if isinstance(fill_label, str):
-            ax.set_ylabel(ax.get_xlabel() + fill_label)
+            ax.set_ylabel(ax.get_ylabel() + fill_label)
 
 
 def MicroTimeFormatter(timevalue, tickposition=None):
@@ -338,7 +338,7 @@ def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
             ax.yaxis.set_minor_locator(AutoMinorLocator())
 
         if isinstance(fill_label, str):
-            ax.set_ylabel(ax.get_xlabel() + fill_label)
+            ax.set_ylabel(ax.get_ylabel() + fill_label)
 
 
 if __name__ == '__main__':
