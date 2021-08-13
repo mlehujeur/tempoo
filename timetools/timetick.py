@@ -130,10 +130,22 @@ class YearTicker(object):
             ticks = self.add_to_ticks(ticks, seconds[::prec], start_timestamp, end_timestamp)
             yield ticks
 
-        ticks = self.add_to_ticks(
-            ticks, AutoLocator().tick_values(start_timestamp, end_timestamp),
-            start_timestamp, end_timestamp)
-        yield ticks
+        # ===========
+        # ==== subsecond precision
+        # no need to get all the seconds in the day
+        floorminute_start_timestamp = UTCFromTimestamp(start_timestamp).floorminute.timestamp
+
+        # milliseconds = np.arange(floorminute_start_timestamp, ceilminute_end_timestamp + 1., 1e-3)  # NOOOOOOOO
+        milliseconds = floorminute_start_timestamp + np.arange(60000) * 1e-3
+        for prec in [100, 50, 20, 10, 1]:
+            ticks = self.add_to_ticks(ticks, milliseconds[::prec], start_timestamp, end_timestamp)
+            yield ticks
+
+        floorsecond_start_timestamp = np.floor(start_timestamp)
+        microseconds = floorsecond_start_timestamp + np.arange(1000000) * 1e-6
+        for prec in [100, 50, 20, 10, 1]:
+            ticks = self.add_to_ticks(ticks, microseconds[::prec], start_timestamp, end_timestamp)
+            yield ticks
 
 
 class TimeLocator(ticker.LinearLocator):
@@ -181,11 +193,6 @@ class TimeLocator(ticker.LinearLocator):
         for tick_generator in tick_generators:
             tick_generator.close()
 
-        # qc
-        # print()
-        # for _ in ticks:
-        #     print(str(UTCFromTimestamp(_)), TimeFormatter(_))
-
         return ticks
 
 
@@ -198,15 +205,8 @@ def TimeFormatter(timevalue, tickposition=None):
         ans = f'{round(timevalue,9)}'
         return ans
 
-    dec = timevalue % 1.0
-    if dec:
-        # return f"{utime.hour:02d}:" \
-        #        f"{utime.minute:02d}:" \
-        #        f"{utime.second:02d}." + \
-        #        f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
-        # ans = f'{utime.second:02d}.' + \
-        #       f"{timevalue % 1.0:f}".split('.')[1].rstrip('0')
-        ans = f'{utime.second + round(dec, 9)}'
+    if timevalue % 1.0:
+        ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].lstrip('0')
 
     elif utime.second:
         # return f"{utime.hour:02d}:" \
@@ -344,9 +344,9 @@ def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    start = UTC(2018, 1, 1)
-    end = UTC(2020, 1, 1)
-    t = np.linspace(start.timestamp, end.timestamp, 2)
+    start = UTC(2018, 1, 1, 12, 1)
+    end = UTC(2018, 1, 1, 12, 2)
+    t = np.linspace(start.timestamp, end.timestamp, 100000)
     plt.plot(t, t, 'ko')
     timetick(plt.gca(), 'xy')
     # plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
