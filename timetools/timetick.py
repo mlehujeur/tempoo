@@ -225,6 +225,7 @@ def TimeFormatter(timevalue, tickposition=None):
     if timevalue % 1.0:
         # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
         # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
+
         tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
         dec = float("0." + tens_of_seconds)
 
@@ -232,9 +233,9 @@ def TimeFormatter(timevalue, tickposition=None):
         if not milliseconds % 1.:
             ans = f"{milliseconds:.0f}$_{{ms}}$"
         else:
-            microsecods = dec * 1e6
-            if not microsecods % 1.:
-                ans = f"{microsecods:.0f}$_{{\mu s}}$"
+            microseconds = dec * 1e6
+            if not microseconds % 1.:
+                ans = f"{microseconds:.0f}$_{{\mu s}}$"
             else:
                 nanoseconds = dec * 1e9
                 if not microsecods % 1.:
@@ -242,17 +243,7 @@ def TimeFormatter(timevalue, tickposition=None):
                 else:
                     ans = f'{utime.second}.{dec}'
 
-        # elif len(dec) <= 6:
-        #     ans = f"{dec.lstrip('0')}$\mus$"
-        # elif len(dec) <= 9:
-        #     ans = f"{dec.lstrip('0')}ns"
-        # else:
-        #     ans = f'{utime.second}.{dec}'
-
     elif utime.second:
-        # return f"{utime.hour:02d}:" \
-        #        f"{utime.minute:02d}:" \
-        #        f"{utime.second:02d}"
         ans = f"{utime.minute:02d}':" \
               f'{utime.second:02d}"'
 
@@ -286,7 +277,8 @@ def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxt
     """
 
     if 'x' in axis:
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(TimeFormatter))
+        formatter = ticker.FuncFormatter(TimeFormatter)
+        ax.xaxis.set_major_formatter(formatter)
         if major:
             ax.xaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
         if minor:
