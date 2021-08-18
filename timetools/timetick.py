@@ -2,6 +2,8 @@ from functools import lru_cache
 from matplotlib import ticker
 from matplotlib.ticker import MaxNLocator, AutoLocator, AutoMinorLocator
 from timetools.utc import *
+import time
+from proton.timer import Timer
 import numpy as np
 
 MINUTE = 60.
@@ -46,9 +48,13 @@ class YearTicker(object):
     @staticmethod
     def add_to_ticks(old_ticks, new_ticks, start_timestamp, end_timestamp):
         """update a list of ticks (timestamps) between two dates"""
-        ticks = np.hstack((old_ticks, new_ticks))
+
+        ticks = np.concatenate((old_ticks, new_ticks))
         ticks = np.unique(ticks)
-        ticks = ticks[(ticks >= start_timestamp) & (ticks <= end_timestamp)]
+        b, e = np.searchsorted(ticks, [start_timestamp, end_timestamp])
+        ticks = ticks[b:e]
+        #ticks = ticks[(ticks >= start_timestamp) & (ticks <= end_timestamp)]
+
         return ticks
 
     def ticks(self, start_timestamp: float, end_timestamp: float):
@@ -126,7 +132,7 @@ class YearTicker(object):
             yield ticks
 
         seconds = np.arange(floorday_start_timestamp, ceilday_end_timestamp + 1., 1.)
-        for prec in [30, 10, 4, 2, 1]:
+        for prec in [30, 10, 5, 1]:
             ticks = self.add_to_ticks(ticks, seconds[::prec], start_timestamp, end_timestamp)
             yield ticks
 
@@ -134,16 +140,21 @@ class YearTicker(object):
         # ==== subsecond precision
         # no need to get all the seconds in the day
         floorminute_start_timestamp = UTCFromTimestamp(start_timestamp).floorminute.timestamp
+        ceilminute_end_timestamp = UTCFromTimestamp(end_timestamp).ceilminute.timestamp
+        number_of_minutes = int(round((ceilminute_end_timestamp - floorminute_start_timestamp) / 60.))
 
         # milliseconds = np.arange(floorminute_start_timestamp, ceilminute_end_timestamp + 1., 1e-3)  # NOOOOOOOO
-        milliseconds = floorminute_start_timestamp + np.arange(60000) * 1e-3
-        for prec in [100, 50, 40, 20, 10, 4, 2, 1]:
+        milliseconds = floorminute_start_timestamp + np.arange(number_of_minutes * 60000) * 1e-3
+        for prec in [500, 100, 50, 25, 5, 1]:
             ticks = self.add_to_ticks(ticks, milliseconds[::prec], start_timestamp, end_timestamp)
             yield ticks
 
         floorsecond_start_timestamp = np.floor(start_timestamp)
-        microseconds = floorsecond_start_timestamp + np.arange(1000000) * 1e-6
-        for prec in [100, 50, 20, 10, 1]:
+        ceilsecond_end_timestamp = np.ceil(end_timestamp)
+        number_of_seconds = int(round(ceilsecond_end_timestamp - floorsecond_start_timestamp))
+
+        microseconds = floorsecond_start_timestamp + np.arange(number_of_seconds * 1000000) * 1e-6
+        for prec in [500, 100, 50, 25, 5, 1]:
             ticks = self.add_to_ticks(ticks, microseconds[::prec], start_timestamp, end_timestamp)
             yield ticks
 
@@ -156,6 +167,7 @@ class TimeLocator(ticker.LinearLocator):
         """
         return nice tick locations between two dates (timestamps)
         """
+
         if vmin < 0:
             # this method does not work well for negative times
             # but if the user displays negative times (i.e. before 1970)
@@ -183,8 +195,13 @@ class TimeLocator(ticker.LinearLocator):
                 next_ticks = list(np.hstack(next_ticks))
                 if len(ticks) and (len(next_ticks) > self.maxticks):
                     # if the desired level of accuracy has been exceeded
+                    # ignore next_ticks and return ticks
                     break
                 ticks = next_ticks  # move to new level of accuracy
+                # for _ in ticks:
+                #     print(str(UTCFromTimestamp(_)))
+                # print(np.round(np.array(ticks)[1:] - np.array(ticks)[:-1],4))
+                # print('')
 
             except StopIteration as err:
                 # max accuracy reached for at least one year.
@@ -206,7 +223,31 @@ def TimeFormatter(timevalue, tickposition=None):
         return ans
 
     if timevalue % 1.0:
-        ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].lstrip('0')
+        # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
+        # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
+        tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
+        dec = float("0." + tens_of_seconds)
+
+        milliseconds = dec * 1e3
+        if not milliseconds % 1.:
+            ans = f"{milliseconds:.0f}$_{{ms}}$"
+        else:
+            microsecods = dec * 1e6
+            if not microsecods % 1.:
+                ans = f"{microsecods:.0f}$_{{\mu s}}$"
+            else:
+                nanoseconds = dec * 1e9
+                if not microsecods % 1.:
+                    ans = f"{nanoseconds:.0f}$_{{ns}}$"
+                else:
+                    ans = f'{utime.second}.{dec}'
+
+        # elif len(dec) <= 6:
+        #     ans = f"{dec.lstrip('0')}$\mus$"
+        # elif len(dec) <= 9:
+        #     ans = f"{dec.lstrip('0')}ns"
+        # else:
+        #     ans = f'{utime.second}.{dec}'
 
     elif utime.second:
         # return f"{utime.hour:02d}:" \
@@ -344,11 +385,11 @@ def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    start = UTC(2018, 1, 1, 12, 1)
-    end = UTC(2018, 1, 1, 12, 2)
+    start = UTC(2018, 1, 1, 12, 1, 9, 998500)
+    end = UTC(2018, 1, 1, 12, 1, 10, 5000)
     t = np.linspace(start.timestamp, end.timestamp, 100000)
     plt.plot(t, t, 'k+')
-    timetick(plt.gca(), 'xy')
+    timetick(plt.gca(), 'x')
     # plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
     plt.gca().grid(True, linestyle=":")
     plt.show()
