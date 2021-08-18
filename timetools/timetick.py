@@ -217,7 +217,7 @@ class TimeLocator(ticker.LinearLocator):
 
 from matplotlib.ticker import Formatter
 class TimeFormatter(Formatter):
-
+    offset_string = ""
     def get_offset(self):
         return self.offset_string
 
