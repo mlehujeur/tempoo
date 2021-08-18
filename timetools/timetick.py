@@ -126,7 +126,7 @@ class YearTicker(object):
             yield ticks
 
         seconds = np.arange(floorday_start_timestamp, ceilday_end_timestamp + 1., 1.)
-        for prec in [30, 10, 2, 1]:
+        for prec in [30, 10, 4, 2, 1]:
             ticks = self.add_to_ticks(ticks, seconds[::prec], start_timestamp, end_timestamp)
             yield ticks
 
@@ -137,7 +137,7 @@ class YearTicker(object):
 
         # milliseconds = np.arange(floorminute_start_timestamp, ceilminute_end_timestamp + 1., 1e-3)  # NOOOOOOOO
         milliseconds = floorminute_start_timestamp + np.arange(60000) * 1e-3
-        for prec in [100, 50, 20, 10, 1]:
+        for prec in [100, 50, 40, 20, 10, 4, 2, 1]:
             ticks = self.add_to_ticks(ticks, milliseconds[::prec], start_timestamp, end_timestamp)
             yield ticks
 
@@ -181,7 +181,7 @@ class TimeLocator(ticker.LinearLocator):
                     next_ticks.append(year_ticks)
                     # print('**', next_ticks)
                 next_ticks = list(np.hstack(next_ticks))
-                if len(ticks) and len(next_ticks) > self.maxticks:
+                if len(ticks) and (len(next_ticks) > self.maxticks):
                     # if the desired level of accuracy has been exceeded
                     break
                 ticks = next_ticks  # move to new level of accuracy
