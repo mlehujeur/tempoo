@@ -213,62 +213,7 @@ class TimeLocator(ticker.LinearLocator):
         return ticks
 
 
-@lru_cache(maxsize=None)
-def oldTimeFormatter(timevalue, tickposition=None):
-    utime = UTCFromTimestamp(timevalue)
 
-    if timevalue < 0.:
-        # problem with negative times (before 1970)
-        ans = f'{round(timevalue,9)}'
-        return ans
-
-    if timevalue % 1.0:
-        # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
-        # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
-
-        tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
-        dec = float("0." + tens_of_seconds)
-
-        milliseconds = dec * 1e3
-        if not milliseconds % 1.:
-            ans = f"{milliseconds:.0f}$_{{ms}}$"
-        else:
-            microseconds = dec * 1e6
-            if not microseconds % 1.:
-                ans = f"{microseconds:.0f}$_{{\mu s}}$"
-            else:
-                nanoseconds = dec * 1e9
-                if not nanoseconds % 1.:
-                    ans = f"{nanoseconds:.0f}$_{{ns}}$"
-                else:
-                    ans = f'{utime.second}.{dec}'
-
-    elif utime.second:
-        ans = f"{utime.minute:02d}':" \
-              f'{utime.second:02d}"'
-
-    elif utime.minute:
-        ans = f"{utime.hour:02d}:" \
-              f"{utime.minute:02d}'"
-
-    elif utime.hour:
-        ans = f"{utime.hour:02d}:00'"
-
-    elif utime.day != 1:
-        ans = f"{utime.day:02d}"
-        # if tickposition == 0:
-        #     ans += "\n" + MONTHS[utime.month - 1]
-
-    elif utime.julday != 1:
-        ans = MONTHS[utime.month - 1]
-
-    elif utime.year != 1970:
-        ans = f"{utime.year:04d}"
-
-    else:
-        ans = "0"
-
-    return ans
 
 from matplotlib.ticker import Formatter
 class TimeFormatter(Formatter):
@@ -276,6 +221,7 @@ class TimeFormatter(Formatter):
     def get_offset(self):
         return self.offset_string
 
+    @lru_cache(maxsize=None)
     def __call__(self, timevalue, pos=None):
         """
         Return the format for tick value *x* at position pos.
@@ -351,6 +297,7 @@ class TimeFormatter(Formatter):
             ans = "0"
 
         if pos == 0:
+            # update the offset string
             self.offset_string = offset_string
 
         return ans
@@ -360,10 +307,9 @@ def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxt
     """
     set the tick locators and formatters for time data
     """
+    formatter = TimeFormatter()
 
     if 'x' in axis:
-        #formatter = ticker.FuncFormatter(oldTimeFormatter)
-        formatter = TimeFormatter()
         ax.xaxis.set_major_formatter(formatter)
         if major:
             ax.xaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
@@ -371,7 +317,7 @@ def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxt
             ax.xaxis.set_minor_locator(TimeLocator(maxticks=minor_maxticks))
 
     if 'y' in axis:
-        ax.yaxis.set_major_formatter(ticker.FuncFormatter(TimeFormatter))
+        ax.yaxis.set_major_formatter(formatter)
         if major:
             ax.yaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
         if minor:
