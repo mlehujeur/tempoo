@@ -250,11 +250,11 @@ class TimeFormatter(Formatter):
             else:
                 microseconds = dec * 1e6
                 if not microseconds % 1.:
-                    ans = f"{microseconds:.0f}$_{{\mu s}}$"
+                    ans = f"{microseconds:.0f}" + r"$_{\mu s}$"
                 else:
                     nanoseconds = dec * 1e9
                     if not nanoseconds % 1.:
-                        ans = f"{nanoseconds:.0f}$_{{ns}}$"
+                        ans = f"{nanoseconds:.0f}" + r"$_{ns}$"
                     else:
                         ans = f'{utime.second}.{dec}'
 
@@ -373,12 +373,12 @@ def MicroTimeFormatter(timevalue, tickposition=None):
     if timevalue and "." in ans:
         ans = ans.rstrip('0').rstrip('.')
 
-    ans += "$_{\mu s}$"  # I fear the plot is mis understood otherwhise
+    ans += r"$_{\mu s}$"  # I fear the plot is mis understood otherwhise
 
     return ans
 
 
-def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=" [$\mu s$]"):
+def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=r" [$\mu s$]"):
     tf = MicroTimeFormatter
 
     if 'x' in axis:
