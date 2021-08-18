@@ -232,7 +232,7 @@ class TimeFormatter(Formatter):
             return ans
 
         if timevalue % 1.0:
-            offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:{utime.minute:02d}'"
+            offset_string = f'''{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:{utime.minute:02d}':{utime.second:02d}"'''
 
             # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
             # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
