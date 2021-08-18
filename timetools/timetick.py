@@ -1,9 +1,7 @@
 from functools import lru_cache
 from matplotlib import ticker
-from matplotlib.ticker import MaxNLocator, AutoLocator, AutoMinorLocator
+from matplotlib.ticker import Formatter, MaxNLocator, AutoLocator, AutoMinorLocator
 from timetools.utc import *
-import time
-from proton.timer import Timer
 import numpy as np
 
 MINUTE = 60.
@@ -213,11 +211,9 @@ class TimeLocator(ticker.LinearLocator):
         return ticks
 
 
-
-
-from matplotlib.ticker import Formatter
 class TimeFormatter(Formatter):
-    offset_string = ""
+    offset_string: str = ""
+
     def get_offset(self):
         return self.offset_string
 
