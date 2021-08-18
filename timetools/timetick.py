@@ -158,7 +158,7 @@ class TimeLocator(ticker.LinearLocator):
         """
         if vmin < 0:
             # this method does not work well for negative times
-            # but if the user displays negative times
+            # but if the user displays negative times (i.e. before 1970)
             # then it is likely not usefull to display dates
             return AutoLocator().tick_values(vmin, vmax)
 
@@ -347,7 +347,7 @@ if __name__ == '__main__':
     start = UTC(2018, 1, 1, 12, 1)
     end = UTC(2018, 1, 1, 12, 2)
     t = np.linspace(start.timestamp, end.timestamp, 100000)
-    plt.plot(t, t, 'ko')
+    plt.plot(t, t, 'k+')
     timetick(plt.gca(), 'xy')
     # plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
     plt.gca().grid(True, linestyle=":")
