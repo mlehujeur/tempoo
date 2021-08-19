@@ -298,7 +298,6 @@ class TimeFormatter(Formatter):
             # update the offset string
             self.offset_string = offset_string
 
-
         return ans
 
 
