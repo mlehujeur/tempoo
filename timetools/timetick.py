@@ -159,6 +159,7 @@ class YearTicker(object):
 
 class TimeLocator(ticker.LinearLocator):
     def __init__(self, maxticks=5):
+        ticker.LinearLocator.__init__(self)
         self.maxticks = maxticks
 
     def tick_values(self, vmin: float, vmax: float):
@@ -237,7 +238,8 @@ class TimeFormatter(Formatter):
             # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
             # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
 
-            tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
+            # tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
+            tens_of_seconds = f"{timevalue:f}".split('.')[-1].rstrip('0')  # < looks more stable
             dec = float("0." + tens_of_seconds)
 
             milliseconds = dec * 1e3
@@ -295,6 +297,7 @@ class TimeFormatter(Formatter):
         if pos == 0:
             # update the offset string
             self.offset_string = offset_string
+
 
         return ans
 
