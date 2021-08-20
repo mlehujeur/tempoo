@@ -218,87 +218,163 @@ class TimeFormatter(Formatter):
     def get_offset(self):
         return self.offset_string
 
-    @lru_cache(maxsize=None)
-    def __call__(self, timevalue, pos=None):
-        """
-        Return the format for tick value *x* at position pos.
-        ``pos=None`` indicates an unspecified location.
-        """
-        utime = UTCFromTimestamp(timevalue)
-        offset_string = str(utime)
+    def format_ticks(self, timevalues):
+        utimes = [UTCFromTimestamp(timevalue) for timevalue in timevalues]
+        ans = [str(_) for _ in utimes]
+        self.offset_string = ""
 
-        if timevalue < 0.:
-            # problem with negative times (before 1970)
-            ans = f'{round(timevalue, 9)}'
-            return ans
+        # ===== strip the left side of the tick labels
+        if utimes[0].year == utimes[-1].year:
+            # year is the same for all ticks; move year name to offset_string and remove it from ticklabels
+            self.offset_string = f"{utimes[0].year:04d}"
+            ans = [_[5:] for _ in ans]
 
-        if timevalue % 1.0:
-            offset_string = f'''{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:{utime.minute:02d}':{utime.second:02d}"'''
+            if utimes[0].month == utimes[-1].month:
+                # month is the same for all ticks; move it name to offset_string and remove it from ticklabels
+                self.offset_string += f"-{utimes[0].month:02d}"
+                ans = [_[3:] for _ in ans]
 
-            # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
-            # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
+                if utimes[0].day == utimes[-1].day:
+                    # day is the same for all ticks; move it name to offset_string and remove it from ticklabels
+                    self.offset_string += f"-{utimes[0].day:02d}"
+                    ans = [_[3:] for _ in ans]
 
-            # tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
-            tens_of_seconds = f"{timevalue:f}".split('.')[-1].rstrip('0')  # < looks more stable
-            dec = float("0." + tens_of_seconds)
+                    if utimes[0].hour == utimes[-1].hour:
+                        # hour is the same for all ticks; move it name to offset_string and remove it from ticklabels
+                        self.offset_string += f"T{utimes[0].hour:02d}"
+                        ans = [":".join(_.split(':')[1:]) for _ in ans]
 
-            milliseconds = dec * 1e3
-            if not milliseconds % 1.:
-                ans = f"{milliseconds:.0f}$_{{ms}}$"
-            else:
-                microseconds = dec * 1e6
-                if not microseconds % 1.:
-                    ans = f"{microseconds:.0f}" + r"$_{\mu s}$"
-                else:
-                    nanoseconds = dec * 1e9
-                    if not nanoseconds % 1.:
-                        ans = f"{nanoseconds:.0f}" + r"$_{ns}$"
-                    else:
-                        ans = f'{utime.second}.{dec}'
+                        if utimes[0].minute == utimes[-1].minute:
+                            # minute is the same for all ticks;
+                            # move it name to offset_string and remove it from ticklabels
+                            self.offset_string += f":{utimes[0].minute:02d}"
+                            ans = [_.split(':')[-1] for _ in ans]
 
-        elif utime.second:
-            offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:{utime.minute:02d}'"
+                            if utimes[0].second == utimes[-1].second:
+                                # second is the same for all ticks;
+                                # move it name to offset_string and remove it from ticklabels
+                                self.offset_string += f":{utimes[0].second:02d}"
+                                ans = ["." + _.split('.')[1] for _ in ans]
 
-            ans = f"{utime.minute:02d}':" \
-                  f'{utime.second:02d}"'
-
-        elif utime.minute:
-            offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:"
-
-            ans = f"{utime.hour:02d}:" \
-                  f"{utime.minute:02d}'"
-
-        elif utime.hour:
-            offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d}"
-
-            ans = f"{utime.hour:02d}:00'"
-
-        elif utime.day != 1:
-            offset_string = f"{utime.year:04d}-{utime.month:02d}"
-
-            ans = f"{utime.day:02d}"
-            # if tickposition == 0:
-            #     ans += "\n" + MONTHS[utime.month - 1]
-
-        elif utime.julday != 1:
-            offset_string = ""
-
-            ans = MONTHS[utime.month - 1]
-
-        elif utime.year != 1970:
-            offset_string = ""
-
-            ans = f"{utime.year:04d}"
-
+        # ===== strip the right side of the tick labels
+        # count the number of non-zero digits after "."
+        ndigits = [len(_.split('.')[1].rstrip("Z").rstrip('0')) for _ in ans]
+        ndigit = max(ndigits)
+        if ndigit > 0:
+            # remove sub second zeros,
+            # make sure all ticks have the same number of digits after .
+            ans = [_.split('.')[0] + "." + _.split('.')[1][:ndigit] for _ in ans]
         else:
-            offset_string = ""
-            ans = "0"
+            # remove 00...0Z on the right hand side of the label
+            ans = [_.rstrip('Z').rstrip('0').rstrip('.') for _ in ans]
 
-        if pos == 0:
-            # update the offset string
-            self.offset_string = offset_string
+            if np.all([_.endswith(':00') for _ in ans]):
+                # seconds are all ":00",  not needed
+                ans = [_[:-3] for _ in ans]
+
+                if np.all([_.endswith(':00') for _ in ans]):
+                    # minutes not needed
+                    ans = [_[:-3] for _ in ans]
+
+                    if np.all([_.endswith('T00') for _ in ans]):
+                        # hours not needed
+                        ans = [_[:-3] for _ in ans]
+
+                        if np.all([_.endswith('-01') for _ in ans]):
+                            # days not needed
+                            ans = [_[:-3] for _ in ans]
+
+                            if np.all([_.endswith('-01') for _ in ans]):
+                                # months not needed
+                                ans = [_[:-3] for _ in ans]
 
         return ans
+
+    @lru_cache(maxsize=None)
+    def __call__(self, timevalue, pos=None):
+        # format the dynamic ticker on top of the window
+        return str(UTCFromTimestamp(timevalue)).split(self.offset_string)[-1]  # .rstrip('Z').rstrip('0').rstrip('.').rstrip(':00')
+        #
+        # return str(timevalue + '*')
+        # """
+        # Return the format for tick value *x* at position pos.
+        # ``pos=None`` indicates an unspecified location.
+        # """
+        # utime = UTCFromTimestamp(timevalue)
+        # offset_string = str(utime)
+        #
+        # if timevalue < 0.:
+        #     # problem with negative times (before 1970)
+        #     ans = f'{round(timevalue, 9)}'
+        #     return ans
+        #
+        # if timevalue % 1.0:
+        #     offset_string = f'''{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:{utime.minute:02d}':{utime.second:02d}"'''
+        #
+        #     # ans = f'{utime.second}.' + f"{timevalue}".split('.')[-1].rstrip('0')
+        #     # ans = f"{utime.second}." + f"{timevalue}''".split('.')[-1].rstrip('0')
+        #
+        #     # tens_of_seconds = f"{timevalue}".split('.')[-1].rstrip('0')
+        #     tens_of_seconds = f"{timevalue:f}".split('.')[-1].rstrip('0')  # < looks more stable
+        #     dec = float("0." + tens_of_seconds)
+        #
+        #     milliseconds = dec * 1e3
+        #     if not milliseconds % 1.:
+        #         ans = f"{milliseconds:.0f}$_{{ms}}$"
+        #     else:
+        #         microseconds = dec * 1e6
+        #         if not microseconds % 1.:
+        #             ans = f"{microseconds:.0f}" + r"$_{\mu s}$"
+        #         else:
+        #             nanoseconds = dec * 1e9
+        #             if not nanoseconds % 1.:
+        #                 ans = f"{nanoseconds:.0f}" + r"$_{ns}$"
+        #             else:
+        #                 ans = f'{utime.second}.{dec}'
+        #
+        # elif utime.second:
+        #     offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:{utime.minute:02d}'"
+        #
+        #     ans = f"{utime.minute:02d}':" \
+        #           f'{utime.second:02d}"'
+        #
+        # elif utime.minute:
+        #     offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d} {utime.hour:02d}:"
+        #
+        #     ans = f"{utime.hour:02d}:" \
+        #           f"{utime.minute:02d}'"
+        #
+        # elif utime.hour:
+        #     offset_string = f"{utime.year:04d}-{utime.month:02d}-{utime.day:02d}"
+        #
+        #     ans = f"{utime.hour:02d}:00'"
+        #
+        # elif utime.day != 1:
+        #     offset_string = f"{utime.year:04d}-{utime.month:02d}"
+        #
+        #     ans = f"{utime.day:02d}"
+        #     # if tickposition == 0:
+        #     #     ans += "\n" + MONTHS[utime.month - 1]
+        #
+        # elif utime.julday != 1:
+        #     offset_string = ""
+        #
+        #     ans = MONTHS[utime.month - 1]
+        #
+        # elif utime.year != 1970:
+        #     offset_string = ""
+        #
+        #     ans = f"{utime.year:04d}"
+        #
+        # else:
+        #     offset_string = ""
+        #     ans = "0"
+        #
+        # if pos == 0:
+        #     # update the offset string
+        #     self.offset_string = offset_string
+        #
+        # return ans
 
 
 def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxticks=20):
