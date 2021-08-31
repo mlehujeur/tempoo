@@ -64,7 +64,8 @@ class YearTicker(object):
         """
         ticks = []
 
-        assert start_timestamp < end_timestamp
+        if not start_timestamp < end_timestamp:
+            start_timestamp, end_timestamp = end_timestamp, start_timestamp
         # ==== window outside this year?
         if end_timestamp < self.year_start_timestamp or \
            start_timestamp > self.year_end_timestamp:
