@@ -431,18 +431,17 @@ def timetick(ax: axes._subplots.Subplot,
         formatter=CalendarTimeFormatter())
 
 
-def millitimetick(ax: axes._subplots.Subplot,
-             axis: str='x',
-             major: bool=True,
-             minor: bool=True,
-             major_maxticks: int=10,
-             minor_maxticks: int=20):
+def millitimetick(
+        ax: axes._subplots.Subplot,
+        axis: str='x',
+        major: bool=True,
+        minor: bool=True):
 
     xy_ticker(
         ax=ax,
         axis=axis,
-        major_locator=MaxNLocator(major_maxticks=major_maxticks) if major else None,
-        minor_locator=MaxNLocator(minor_maxticks=minor_maxticks) if minor else None,
+        major_locator=AutoLocator() if major else None,
+        minor_locator=AutoMinorLocator() if minor else None,
         formatter=MilliSecTimeFormatter())
 
 
@@ -456,8 +455,8 @@ def microtimetick(ax: axes._subplots.Subplot,
     xy_ticker(
         ax=ax,
         axis=axis,
-        major_locator=MaxNLocator(major_maxticks) if major else None,
-        minor_locator=MaxNLocator(minor_maxticks) if minor else None,
+        major_locator=AutoLocator() if major else None,
+        minor_locator=AutoMinorLocator() if minor else None,
         formatter=MicroSecTimeFormatter())
 
 
