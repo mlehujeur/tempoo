@@ -1,6 +1,6 @@
 from functools import lru_cache
-from matplotlib import ticker
-from matplotlib.ticker import Formatter, MaxNLocator, AutoLocator, AutoMinorLocator
+from matplotlib import ticker, axes
+from matplotlib.ticker import Formatter, Locator, MaxNLocator, AutoLocator, AutoMinorLocator
 from timetools.utc import *
 import numpy as np
 
@@ -213,7 +213,7 @@ class TimeLocator(ticker.LinearLocator):
         return ticks
 
 
-class TimeFormatter(Formatter):
+class CalendarTimeFormatter(Formatter):
     offset_string: str = ""
     range_separator = "~"
 
@@ -221,6 +221,7 @@ class TimeFormatter(Formatter):
         return self.offset_string
 
     def format_ticks(self, timevalues):
+        self.set_locs(timevalues)
         utimes = [UTCFromTimestamp(timevalue) for timevalue in timevalues]
         time_range = timevalues[-1] - timevalues[0]
         ans = [str(_) for _ in utimes]
@@ -338,113 +339,126 @@ class TimeFormatter(Formatter):
 
         else:
             ans = ans.split(self.offset_string)[-1]
-
         return ans
 
 
-def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxticks=20):
+class SubSecTimeFormatter(Formatter):
+    offset_string: str = r"$^{*}$[s]"
+    tick_extension: str = r"$^{*}$"
+    scale: float = 1.0
+
+    def get_offset(self):
+        return self.offset_string
+
+    def format_ticks(self, timevalues):
+
+        timevalues = np.round(np.asarray(timevalues, float) * self.scale, 9)
+        self.set_locs(timevalues)
+        ans = []
+        for timevalue in timevalues:
+            timevalue_str = f"{timevalue}"   # nice number representation
+
+            if timevalue and "." in timevalue_str:
+                timevalue_str = timevalue_str.rstrip('0').rstrip('.')
+
+            timevalue_str += self.tick_extension  # I fear the plot is misunderstood otherwhise
+            ans.append(timevalue_str)
+        return ans
+
+    def __call__(self, timevalue, pos=None):
+        # format the dynamic ticker on top of the window
+        ans = f"{timevalue}"
+        return ans
+
+
+class MilliSecTimeFormatter(SubSecTimeFormatter):
+    offset_string: str = "$ [ms] $" # r"$^{*}$[ms]"
+    tick_extension: str = "" # r"$^{*}$"
+    scale: float = 1e3
+
+
+class MicroSecTimeFormatter(SubSecTimeFormatter):
+    offset_string: str = r"$ [\mu s] $"
+    tick_extension: str = ""  # r"$^{*}$"
+    scale: float = 1e6
+
+
+def xy_ticker(
+        ax: axes._subplots.Subplot,
+        axis: str = 'x',
+        major_locator: Union[Locator, None] = None,
+        minor_locator: Union[Locator, None] = None,
+        formatter: Formatter = None):
+
     """
     set the tick locators and formatters for time data
+    :param ax: the ax to modify
+    :param axis: "x" or "y"
+    :param major:
+    :param minor:
+    :param major_maxticks:
+    :param minor_maxticks:
+    :param formatter_class: CalendarTimeFormatter, MilliSecFormatter, MicroSecFormatter
     """
-    formatter = TimeFormatter()
 
     if 'x' in axis:
         ax.xaxis.set_major_formatter(formatter)
-        if major:
-            ax.xaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
-        if minor:
-            ax.xaxis.set_minor_locator(TimeLocator(maxticks=minor_maxticks))
+        if major_locator is not None:
+            ax.xaxis.set_major_locator(major_locator)
+        if minor_locator is not None:
+            ax.xaxis.set_minor_locator(minor_locator)
 
     if 'y' in axis:
         ax.yaxis.set_major_formatter(formatter)
-        if major:
-            ax.yaxis.set_major_locator(TimeLocator(maxticks=major_maxticks))
-        if minor:
-            ax.yaxis.set_minor_locator(TimeLocator(maxticks=minor_maxticks))
+        if major_locator is not None:
+            ax.yaxis.set_major_locator(major_locator)
+        if minor_locator is not None:
+            ax.yaxis.set_minor_locator(minor_locator)
 
 
-def MilliTimeFormatter(timevalue, tickposition=None):
-    tick_extension = r"$_{ms}$"
-    timevalue = round(timevalue * 1e3, 9)
+def timetick(ax: axes._subplots.Subplot,
+             axis: str='x',
+             major: bool=True,
+             minor: bool=True,
+             major_maxticks: int=10,
+             minor_maxticks: int=20):
 
-    ans = f"{timevalue}"  # nice number representation
-
-    if timevalue and "." in ans:
-        ans = ans.rstrip('0').rstrip('.')
-
-    ans += tick_extension  # I fear the plot is misunderstood otherwhise
-    return ans
-
-
-def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=" [ms]", tick_extension=r"$_{ms}$"):
-    tf = MilliTimeFormatter
-
-    if 'x' in axis:
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(tf))
-
-        if major:
-            # ax.xaxis.set_major_locator(MaxNLocator(major_maxticks))
-            ax.xaxis.set_major_locator(AutoLocator())
-
-        if minor:
-            ax.xaxis.set_minor_locator(AutoMinorLocator())
-
-        if isinstance(fill_label, str):
-            ax.set_xlabel(ax.get_xlabel() + fill_label)
-
-    if 'y' in axis:
-        ax.yaxis.set_major_formatter(ticker.FuncFormatter(tf))
-
-        if major:
-            ax.yaxis.set_major_locator(AutoLocator())
-
-        if minor:
-            ax.yaxis.set_minor_locator(AutoMinorLocator())
-
-        if isinstance(fill_label, str):
-            ax.set_ylabel(ax.get_ylabel() + fill_label)
+    xy_ticker(
+        ax=ax,
+        axis=axis,
+        major_locator=TimeLocator(maxticks=major_maxticks) if major else None,
+        minor_locator=TimeLocator(maxticks=minor_maxticks) if minor else None,
+        formatter=CalendarTimeFormatter())
 
 
-def MicroTimeFormatter(timevalue, tickposition=None):
-    tick_extension = r"$_{\mu s}$"
-    timevalue = round(timevalue * 1e6, 9)
+def millitimetick(ax: axes._subplots.Subplot,
+             axis: str='x',
+             major: bool=True,
+             minor: bool=True,
+             major_maxticks: int=10,
+             minor_maxticks: int=20):
 
-    ans = f"{timevalue}"  # nice number representation
-
-    if timevalue and "." in ans:
-        ans = ans.rstrip('0').rstrip('.')
-
-    ans += tick_extension  # I fear the plot is misunderstood otherwhise
-
-    return ans
+    xy_ticker(
+        ax=ax,
+        axis=axis,
+        major_locator=MaxNLocator(major_maxticks=major_maxticks) if major else None,
+        minor_locator=MaxNLocator(minor_maxticks=minor_maxticks) if minor else None,
+        formatter=MilliSecTimeFormatter())
 
 
-def microtimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=r" [$\mu s$]"):
-    tf = MicroTimeFormatter
+def microtimetick(ax: axes._subplots.Subplot,
+             axis: str='x',
+             major: bool=True,
+             minor: bool=True,
+             major_maxticks: int=10,
+             minor_maxticks: int=20):
 
-    if 'x' in axis:
-        ax.xaxis.set_major_formatter(ticker.FuncFormatter(tf))
-
-        if major:
-            ax.xaxis.set_major_locator(AutoLocator()) # MaxNLocator(major_maxticks))
-
-        if minor:
-            ax.xaxis.set_minor_locator(AutoMinorLocator()) #MaxNLocator(minor_maxticks))
-
-        if isinstance(fill_label, str):
-            ax.set_xlabel(ax.get_xlabel() + fill_label)
-
-    if 'y' in axis:
-        ax.yaxis.set_major_formatter(ticker.FuncFormatter(tf))
-
-        if major:
-            ax.yaxis.set_major_locator(AutoLocator())
-
-        if minor:
-            ax.yaxis.set_minor_locator(AutoMinorLocator())
-
-        if isinstance(fill_label, str):
-            ax.set_ylabel(ax.get_ylabel() + fill_label)
+    xy_ticker(
+        ax=ax,
+        axis=axis,
+        major_locator=MaxNLocator(major_maxticks) if major else None,
+        minor_locator=MaxNLocator(minor_maxticks) if minor else None,
+        formatter=MicroSecTimeFormatter())
 
 
 if __name__ == '__main__':
@@ -454,7 +468,9 @@ if __name__ == '__main__':
     end = UTC(2018, 1, 1, 12, 1, 10, 5000)
     t = np.linspace(start.timestamp, end.timestamp, 100000)
     plt.plot(t, t, 'k+')
+
     timetick(plt.gca(), 'x')
+    microtimetick(plt.gca(), 'y')
     # plt.setp(plt.gca().get_xticklabels(), rotation=-25, ha="left", va="top")
     plt.gca().grid(True, linestyle=":")
     plt.show()
