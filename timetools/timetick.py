@@ -364,6 +364,7 @@ def timetick(ax, axis='x', major=True, minor=True, major_maxticks=10, minor_maxt
 
 
 def MilliTimeFormatter(timevalue, tickposition=None):
+    tick_extension = r"$_{ms}$"
     timevalue = round(timevalue * 1e3, 9)
 
     ans = f"{timevalue}"  # nice number representation
@@ -371,11 +372,11 @@ def MilliTimeFormatter(timevalue, tickposition=None):
     if timevalue and "." in ans:
         ans = ans.rstrip('0').rstrip('.')
 
-    ans += "$_{ms}$"  # I fear the plot is mis understood otherwhise
+    ans += tick_extension  # I fear the plot is misunderstood otherwhise
     return ans
 
 
-def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=" [ms]"):
+def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_maxticks=10, fill_label=" [ms]", tick_extension=r"$_{ms}$"):
     tf = MilliTimeFormatter
 
     if 'x' in axis:
@@ -405,6 +406,7 @@ def millitimetick(ax, axis='x', major=True, minor=True, major_maxticks=5, minor_
 
 
 def MicroTimeFormatter(timevalue, tickposition=None):
+    tick_extension = r"$_{\mu s}$"
     timevalue = round(timevalue * 1e6, 9)
 
     ans = f"{timevalue}"  # nice number representation
@@ -412,7 +414,7 @@ def MicroTimeFormatter(timevalue, tickposition=None):
     if timevalue and "." in ans:
         ans = ans.rstrip('0').rstrip('.')
 
-    ans += r"$_{\mu s}$"  # I fear the plot is mis understood otherwhise
+    ans += tick_extension  # I fear the plot is misunderstood otherwhise
 
     return ans
 
