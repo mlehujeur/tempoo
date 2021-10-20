@@ -112,7 +112,9 @@ def split_time_into_windows_best(
     """
     test the four window modes 0 1 2 3 above
     returns the result time windows for the mode
-    with best fit to the
+    with best fit to the required parameters
+        in terms of deviation to winlen, winstep, loss of data or overlapp missing part of the signal
+
     """
 
     winmodes = np.arange(4)
