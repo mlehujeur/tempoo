@@ -8,8 +8,9 @@ tools related to time windows
 
 def split_time_into_windows(
         starttime: float, endtime: float, 
-        winlen: float, winstep: float, 
-        winmode: Union[None, int] = 0) \
+        winlen: float = 0.,
+        winstep: float = 0.,
+        winmode: int = 0) \
         -> (np.ndarray, np.ndarray):
     """
     :param starttime: startting time
@@ -19,8 +20,6 @@ def split_time_into_windows(
     :param winmode: window mode, see split_time_into_windows
     :return starttimes, endtimes: arrays of float
     :rtype  starttimes, endtimes: numpy arrays
-
-    winmode None : one window
 
     winmode 0 : last samples lost
     s                  e
@@ -64,9 +63,6 @@ def split_time_into_windows(
     if endtime <= starttime:
         raise ValueError("starttime must be lower than endtime")
 
-    if winmode is None:
-        return np.array([starttime]), np.array([endtime])
-
     if not 0 < winstep <= winlen:
         raise ValueError("winlen must be lower or equal to winstep")
 
@@ -75,7 +71,8 @@ def split_time_into_windows(
             winlen, endtime - starttime))
 
     if winmode == 0:
-        starttimes = np.arange(starttime, endtime - winlen, winstep)
+        eps = winlen / 1000.
+        starttimes = np.arange(starttime, endtime - winlen + eps, winstep)
         endtimes = starttimes + winlen
 
     elif winmode == 1:
@@ -106,3 +103,77 @@ def split_time_into_windows(
         raise ValueError('unexpected mode number')
 
     return starttimes, endtimes
+
+
+def split_time_into_windows_best(
+        starttime: float, endtime: float,
+        winlen: float, winstep: float) \
+        -> (np.ndarray, np.ndarray):
+    """
+    test the four window modes 0 1 2 3 above
+    returns the result time windows for the mode
+    with best fit to the
+    """
+
+    winmodes = np.arange(4)
+    option_costs = np.zeros(len(winmodes), float)
+    outputs = []
+    for nmode, winmode in enumerate(winmodes):
+        starttimes, endtimes = split_time_into_windows(
+            starttime=starttime,
+            endtime=endtime,
+            winlen=winlen,
+            winstep=winstep,
+            winmode=winmode)
+
+        deviation_to_winlen = (np.abs((endtimes - starttimes) - winlen) / winlen).sum()
+        deviation_to_winstep = (np.abs((starttimes[1:] - starttimes[:-1]) - winstep) / winstep).sum()
+        data_loss = (max([0., starttimes[0] - starttime]) + max([0., endtime - endtimes[-1]])) / (endtime - starttime)
+        overlap_null = (max([0., starttime - starttimes[0]]) + max([0., endtimes[-1] - endtime])) / (endtime - starttime)
+
+        option_costs[nmode] = \
+            deviation_to_winlen + \
+            deviation_to_winstep + \
+            data_loss + \
+            overlap_null
+        outputs.append((starttimes, endtimes))
+
+    i_best_winmode = np.argmin(option_costs)
+    starttimes, endtimes = outputs[i_best_winmode]
+    # print(f'best mode : {winmodes[i_best_winmode]}')
+    return starttimes, endtimes
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
+    while True:
+        start = np.random.rand()
+        end = start + np.random.rand()
+        winlen = (end - start) / 2.  # * np.random.rand()
+        winstep = winlen / 2.  # * np.random.rand()
+
+        plt.gca().cla()
+        plt.plot([start, end], [-1, -1], 'k')
+
+        for winmode in range(4):
+            starttimes, endtimes = split_time_into_windows(
+                starttime=start,
+                endtime=end,
+                winlen=winlen,
+                winstep=winstep,
+                winmode=winmode)
+
+            for nwin, (winstart, winend) in enumerate(zip(starttimes, endtimes)):
+                plt.plot([winstart, winend], [winmode + 0.1*nwin, winmode + 0.1*nwin],
+                         label=winmode if nwin == 0 else None)
+
+        starttimes, endtimes = split_time_into_windows_best(
+            starttime=start,
+            endtime=end,
+            winlen=winlen,
+            winstep=winstep)
+
+        plt.gca().grid(True)
+        plt.legend()
+        plt.show()
