@@ -6,60 +6,17 @@ tools related to time windows
 """
 
 
-def split_time_into_windows(
-        starttime: float, endtime: float, 
-        winlen: float = 0.,
-        winstep: float = 0.,
-        winmode: int = 0) \
+def _split_time_into_windows(
+        starttime: float,
+        endtime: float,
+        winlen: float,
+        winstep: float,
+        winmode: int) \
         -> (np.ndarray, np.ndarray):
     """
-    :param starttime: startting time
-    :param endtime: ending time
-    :param winlen: length of the slidding window, in seconds
-    :param winstep: step between slidding windows, in seconds
-    :param winmode: window mode, see split_time_into_windows
-    :return starttimes, endtimes: arrays of float
-    :rtype  starttimes, endtimes: numpy arrays
-
-    winmode 0 : last samples lost
-    s                  e
-    ********************
-    --------           |
-         --------      |
-              -------- |
-                      xx
-
-    winmode 1 : endtime applies to the beginning of the window
-    s                  e
-    ********************
-    --------           |
-      --------         |
-        --------       |
-          --------     |
-            --------   |
-              -------- |
-                --------
-                  --------
-                    --------
-                      --------
-
-    winmode 2 : reduce winstep for last window, add one more window
-    s                  e
-    ********************
-    --------           |
-         --------      |
-              -------- |
-                --------  => overlap longer for this last window
-
-
-    winmode 3 : increase winstep for last window
-    s                  e
-    ********************
-    ----------         |
-        ----------     |
-              ----------   => overlap shorter for this last window
-
+    private, see split_time_into_windows
     """
+
     if endtime <= starttime:
         raise ValueError("starttime must be lower than endtime")
 
@@ -105,44 +62,111 @@ def split_time_into_windows(
     return starttimes, endtimes
 
 
-def split_time_into_windows_best(
-        starttime: float, endtime: float,
-        winlen: float, winstep: float) \
+def split_time_into_windows(
+        starttime: float,
+        endtime: float,
+        winlen: float,
+        winstep: float,
+        winmode: Union[None, int] = None) \
         -> (np.ndarray, np.ndarray):
+
     """
-    test the four window modes 0 1 2 3 above
-    returns the result time windows for the mode
-    with best fit to the required parameters
-        in terms of deviation to winlen, winstep, loss of data or overlapp missing part of the signal
+    :param starttime: startting time
+    :param endtime: ending time
+    :param winlen: length of the slidding window, in seconds
+    :param winstep: step between slidding windows, in seconds
+    :param winmode: window mode, see split_time_into_windows
+    :return starttimes, endtimes: arrays of float
+    :rtype  starttimes, endtimes: numpy arrays
+
+    winmode=None : automatically choose the best mode among the modes below
+
+    winmode=0 : last samples lost
+    s                  e
+    ********************
+    --------           |
+         --------      |
+              -------- |
+                      xx
+
+    winmode=1 : endtime applies to the beginning of the window
+    s                  e
+    ********************
+    --------           |
+      --------         |
+        --------       |
+          --------     |
+            --------   |
+              -------- |
+                --------
+                  --------
+                    --------
+                      --------
+
+    winmode=2 : reduce winstep for last window, add one more window
+    s                  e
+    ********************
+    --------           |
+         --------      |
+              -------- |
+                --------  => overlap longer for this last window
+
+
+    winmode=3 : increase winstep for last window
+    s                  e
+    ********************
+    ----------         |
+        ----------     |
+              ----------   => overlap shorter for this last window
 
     """
 
-    winmodes = np.arange(4)
-    option_costs = np.zeros(len(winmodes), float)
-    outputs = []
-    for nmode, winmode in enumerate(winmodes):
-        starttimes, endtimes = split_time_into_windows(
+    winmodes = np.arange(4)  # all possible modes
+
+    if winmode in winmodes:
+        # user gave a specific mode, run the private equivalent
+        starttimes, endtimes = _split_time_into_windows(
             starttime=starttime,
             endtime=endtime,
             winlen=winlen,
             winstep=winstep,
             winmode=winmode)
 
-        deviation_to_winlen = (np.abs((endtimes - starttimes) - winlen) / winlen).sum()
-        deviation_to_winstep = (np.abs((starttimes[1:] - starttimes[:-1]) - winstep) / winstep).sum()
-        data_loss = (max([0., starttimes[0] - starttime]) + max([0., endtime - endtimes[-1]])) / (endtime - starttime)
-        overlap_null = (max([0., starttime - starttimes[0]]) + max([0., endtimes[-1] - endtime])) / (endtime - starttime)
+    elif winmode is None:
+        # all modes have strengths and weaknesses,
+        # choose the best mode (test all of them and compare)
+        option_costs = np.zeros(len(winmodes), float)
+        outputs = []
+        for nmode, winmode in enumerate(winmodes):
+            starttimes, endtimes = _split_time_into_windows(
+                starttime=starttime,
+                endtime=endtime,
+                winlen=winlen,
+                winstep=winstep,
+                winmode=winmode)
 
-        option_costs[nmode] = \
-            deviation_to_winlen + \
-            deviation_to_winstep + \
-            data_loss + \
-            overlap_null
-        outputs.append((starttimes, endtimes))
+            # estimate the deviation to the requested parameters
+            deviation_to_winlen = (np.abs((endtimes - starttimes) - winlen) / winlen).sum()
+            deviation_to_winstep = (np.abs((starttimes[1:] - starttimes[:-1]) - winstep) / winstep).sum()
+            data_loss = (max([0., starttimes[0] - starttime]) + max([0., endtime - endtimes[-1]])) / (endtime - starttime)
+            overlap_null = (max([0., starttime - starttimes[0]]) + max([0., endtimes[-1] - endtime])) / (endtime - starttime)
 
-    i_best_winmode = np.argmin(option_costs)
-    starttimes, endtimes = outputs[i_best_winmode]
-    # print(f'best mode : {winmodes[i_best_winmode]}')
+            # print(winmode, deviation_to_winlen, deviation_to_winstep, data_loss, overlap_null)
+
+            option_costs[nmode] = \
+                deviation_to_winlen + \
+                deviation_to_winstep + \
+                data_loss + \
+                overlap_null
+            outputs.append((starttimes, endtimes))
+
+        # pick the best option
+        i_best_winmode = np.argmin(option_costs)
+        starttimes, endtimes = outputs[i_best_winmode]
+
+    else:
+        raise ValueError(winmode)
+
     return starttimes, endtimes
 
 
@@ -159,7 +183,7 @@ if __name__ == '__main__':
         plt.plot([start, end], [-1, -1], 'k')
 
         for winmode in range(4):
-            starttimes, endtimes = split_time_into_windows(
+            starttimes, endtimes = _split_time_into_windows(
                 starttime=start,
                 endtime=end,
                 winlen=winlen,
@@ -170,7 +194,7 @@ if __name__ == '__main__':
                 plt.plot([winstart, winend], [winmode + 0.1*nwin, winmode + 0.1*nwin],
                          label=winmode if nwin == 0 else None)
 
-        starttimes, endtimes = split_time_into_windows_best(
+        starttimes, endtimes = split_time_into_windows(
             starttime=start,
             endtime=end,
             winlen=winlen,
