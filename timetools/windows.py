@@ -67,7 +67,7 @@ def split_time_into_windows(
         endtime: float,
         winlen: float,
         winstep: float,
-        winmode: Union[None, int] = None) \
+        winmode: Union[None, int, str] = None) \
         -> (np.ndarray, np.ndarray):
 
     """
@@ -79,7 +79,7 @@ def split_time_into_windows(
     :return starttimes, endtimes: arrays of float
     :rtype  starttimes, endtimes: numpy arrays
 
-    winmode=None : automatically choose the best mode among the modes below
+    winmode=None/'auto' : automatically choose the best mode among the modes below
 
     winmode=0 : last samples lost
     s                  e
@@ -121,9 +121,9 @@ def split_time_into_windows(
 
     """
 
-    winmodes = np.arange(4)  # all possible modes
+    available_winmodes = np.arange(4)
 
-    if winmode in winmodes:
+    if winmode in available_winmodes:
         # user gave a specific mode, run the private equivalent
         starttimes, endtimes = _split_time_into_windows(
             starttime=starttime,
@@ -132,12 +132,12 @@ def split_time_into_windows(
             winstep=winstep,
             winmode=winmode)
 
-    elif winmode is None:
+    elif winmode is None or winmode == 'auto':
         # all modes have strengths and weaknesses,
         # choose the best mode (test all of them and compare)
-        option_costs = np.zeros(len(winmodes), float)
+        option_costs = np.zeros(len(available_winmodes), float)
         outputs = []
-        for nmode, winmode in enumerate(winmodes):
+        for nmode, winmode in enumerate(available_winmodes):
             starttimes, endtimes = _split_time_into_windows(
                 starttime=starttime,
                 endtime=endtime,
