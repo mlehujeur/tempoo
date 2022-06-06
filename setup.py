@@ -35,4 +35,5 @@ setuptools.setup(
     python_requires='>=3.7, <3.8',
     install_requires=[
         'numpy', 'matplotlib', 'pytest'],
-    scripts=["timetools/bin/doy"])
+    scripts=["timetools/bin/doy",
+             "timetools/timeline.py"])

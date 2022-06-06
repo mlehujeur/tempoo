@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys, glob, os, time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,6 +16,8 @@ if __name__ == "__main__":
         for n, l in enumerate(fid):
             if l.startswith('#'):
                 continue
+            if "," not in l:
+                continue
             start, end, title = l.split('\n')[0].split(',')
 
             start = UTCFromStr(start)                        
@@ -30,7 +33,9 @@ if __name__ == "__main__":
                 ha="left", 
                 va="bottom",
                 color=hdl.get_color())
-
+    ylim = ax.get_ylim()
+    ax.plot(now.timestamp * np.ones(2), ylim, 'r--')
+    ax.grid(True)
     timetick(plt.gca())
     plt.show()
 
