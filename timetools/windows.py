@@ -67,7 +67,8 @@ def split_time_into_windows(
         endtime: float,
         winlen: float,
         winstep: float,
-        winmode: Union[None, int, str] = None) \
+        winmode: Union[None, int, str] = None,
+        verbose: bool = True) \
         -> (np.ndarray, np.ndarray):
 
     """
@@ -123,7 +124,7 @@ def split_time_into_windows(
 
     available_winmodes = np.arange(4)
 
-    if winmode in available_winmodes:
+    if isinstance(winmode, int) and winmode in available_winmodes:
         # user gave a specific mode, run the private equivalent
         starttimes, endtimes = _split_time_into_windows(
             starttime=starttime,
@@ -163,9 +164,27 @@ def split_time_into_windows(
         # pick the best option
         i_best_winmode = np.argmin(option_costs)
         starttimes, endtimes = outputs[i_best_winmode]
+        best_winmode = available_winmodes[i_best_winmode]
+
+        if verbose:
+            deviation_to_winlen = (np.abs((endtimes - starttimes) - winlen) / winlen).sum()
+            deviation_to_winstep = (np.abs((starttimes[1:] - starttimes[:-1]) - winstep) / winstep).sum()
+            data_loss = (max([0., starttimes[0] - starttime]) + max([0., endtime - endtimes[-1]])) / (endtime - starttime)
+            overlap_null = (max([0., starttime - starttimes[0]]) + max([0., endtimes[-1] - endtime])) / (endtime - starttime)
+
+            print(f'split_time_into_windows : auto mode choose     {best_winmode}')
+            print(f'split_time_into_windows : deviation_to_winlen  {deviation_to_winlen}')
+            print(f'split_time_into_windows : deviation_to_winstep {deviation_to_winstep}')
+            print(f'split_time_into_windows : data_loss            {data_loss}')
+            print(f'split_time_into_windows : overlap_null         {overlap_null}')
 
     else:
         raise ValueError(winmode)
+
+    if verbose:
+        print(f'split_time_into_windows : {starttime}, {endtime}')
+        for n, (start, end) in enumerate(zip(starttimes, endtimes)):
+            print(f'split_time_into_windows :      {n}, {start}, {end}')
 
     return starttimes, endtimes
 
