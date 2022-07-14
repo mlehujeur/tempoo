@@ -81,14 +81,14 @@ def test_utc_add():
     i, j = np.array(np.random.rand(2) * len(TIMESTAMPS), int)
 
     utc1 = UTC(
-        YEARS[i], MONTHS[i], DAYS[i],
-        HOURS[i], MINUTES[i], SECONDS[i],
-        MICROSECONDS[i])
+        year=YEARS[i], month=MONTHS[i], day=DAYS[i],
+        hour=HOURS[i], minute=MINUTES[i], second=SECONDS[i],
+        microsecond=MICROSECONDS[i])
 
     utc2 = UTC(
-        YEARS[j], MONTHS[j], DAYS[j],
-        HOURS[j], MINUTES[j], SECONDS[j],
-        MICROSECONDS[j])
+        year=YEARS[j], month=MONTHS[j], day=DAYS[j],
+        hour=HOURS[j], minute=MINUTES[j], second=SECONDS[j],
+        microsecond=MICROSECONDS[j])
 
     assert isinstance(utc1 + utc2, UTC)
     assert (utc1 + utc2).timestamp == round(utc1.timestamp + utc2.timestamp, 6)

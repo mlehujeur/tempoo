@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import sys
+
 from typing import Union
 import datetime
 import numpy as np
@@ -214,8 +217,20 @@ class UTC(datetime.datetime):
         return other
 
     def __add__(self, other):
+        """
+        Prior to Python 3.8, arithmetic operations always returned `date`, even in subclasses
+        :param other:
+        :return:
+        """
+
         other = self._other_to_timedelta(other)
-        new = super(UTC, self).__add__(other)
+        # new = super(UTC, self).__sub__(other)  # works only in python <= 3.7 ???
+        new = datetime.datetime(
+            year=self.year, month=self.month, day=self.day,
+            hour=self.hour, minute=self.minute,
+            second=self.second, microsecond=self.microsecond,
+            # WARNING : VERY IMPORTANT ARG !!
+            tzinfo=UTCTZINFO) + other
 
         return UTC(
             year=new.year, month=new.month, day=new.day,
@@ -224,8 +239,13 @@ class UTC(datetime.datetime):
 
     def __sub__(self, other):
         other = self._other_to_timedelta(other)
-        new = super(UTC, self).__sub__(other)
-
+        # new = super(UTC, self).__sub__(other)  # works only in python <= 3.7 ???
+        new = datetime.datetime(
+            year=self.year, month=self.month, day=self.day,
+            hour=self.hour, minute=self.minute,
+            second=self.second, microsecond=self.microsecond,
+            # WARNING : VERY IMPORTANT ARG !!
+            tzinfo=UTCTZINFO) - other
         return UTC(
             year=new.year, month=new.month, day=new.day,
             hour=new.hour, minute=new.minute, second=new.second,
@@ -409,6 +429,7 @@ if __name__ == '__main__':
 
     u1 = UTCFromTimestamp(1)
     u2 = UTCFromTimestamp(2)
+    print(u1 + u2)
     assert u2 > u1
     dt = u2 - u1
     print(dt.timestamp)
