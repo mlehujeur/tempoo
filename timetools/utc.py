@@ -10,6 +10,7 @@ YEAR = 365.25 * DAY
 WEEK = 7. * DAY
 
 UTCTZINFO = datetime.timezone(datetime.timedelta(0), 'UTC')
+UTCTZINFO = datetime.timezone.utc
 
 """
 policy
