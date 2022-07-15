@@ -463,7 +463,7 @@ def microtimetick(ax: axes._subplots.Subplot,
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    start = UTC(2018, 1, 1, 12, 1, 9, 998500)
+    start = UTC(2016, 1, 1, 12, 1, 9, 998500)
     end = UTC(2018, 1, 1, 12, 1, 10, 5000)
     t = np.linspace(start.timestamp, end.timestamp, 100000)
     plt.plot(t, t, 'k+')
