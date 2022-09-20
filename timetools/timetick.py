@@ -224,235 +224,123 @@ class CalendarTimeFormatter(Formatter):
         self.set_locs(timevalues)
         utimes = [UTCFromTimestamp(timevalue) for timevalue in timevalues]
         time_range = timevalues[-1] - timevalues[0]
-        ans = [str(_) for _ in utimes]
+        utimes_str = [str(_) for _ in utimes]
         self.offset_string = ""
 
         # ===== strip the left side of the tick labels
         if utimes[0].year == utimes[-1].year:
-            # year is the same for all ticks; move year name to offset_string and remove it from ticklabels
-            self.offset_string = f"{utimes[0].year:04d}"
-            ans = [_[5:] for _ in ans]
+            utimes_str = self.format_ticks_same_year(utimes, utimes_str)
 
-            if utimes[0].month == utimes[-1].month:
-                # month is the same for all ticks; move it name to offset_string and remove it from ticklabels
-                self.offset_string += f"-{utimes[0].month:02d}"
-                ans = [_[3:] for _ in ans]
-
-                if utimes[0].day == utimes[-1].day:
-                    # day is the same for all ticks; move it name to offset_string and remove it from ticklabels
-                    self.offset_string += f"-{utimes[0].day:02d}"
-                    ans = [_[3:] for _ in ans]
-
-                    if utimes[0].hour == utimes[-1].hour:
-                        # hour is the same for all ticks; move it name to offset_string and remove it from ticklabels
-                        self.offset_string += f"T{utimes[0].hour:02d}"
-                        ans = [":".join(_.split(':')[1:]) for _ in ans]
-
-                        if utimes[0].minute == utimes[-1].minute:
-                            # minute is the same for all ticks;
-                            # move it name to offset_string and remove it from ticklabels
-                            self.offset_string += f":{utimes[0].minute:02d}"
-                            ans = [_.split(':')[-1] for _ in ans]
-
-                            if utimes[0].second == utimes[-1].second:
-                                # second is the same for all ticks;
-                                # move it name to offset_string and remove it from ticklabels
-                                self.offset_string += f":{utimes[0].second:02d}"
-                                ans = ["." + _.split('.')[1] for _ in ans]
         elif time_range < YEAR:
-            # year is not the same for all ticks
-            # maybe we are looking a small time range but
-            # overlapping the start of the year
-            # year precision is not needed
-            # => move start and end times to offset_string
-            # and display only the required accuracy in tick labels
-            utime_first_str = str(utimes[0])
-            utime_last_str = str(utimes[-1])
-            sep = self.range_separator
-            self.offset_string = f"{utime_first_str[:4]}{sep}{utime_last_str[:4]}"
-            ans = [_[5:] for _ in ans]
-
-            if time_range < 30 * DAY:
-
-                self.offset_string = f"{utime_first_str[:7]}{sep}{utime_last_str[:7]}"
-                ans = [_[3:] for _ in ans]
-
-                if time_range < DAY:
-
-                    self.offset_string = f"{utime_first_str[:10]}{sep}{utime_last_str[:10]}"
-                    ans = [_[3:] for _ in ans]
-
-                    if time_range < HOUR:
-
-                        self.offset_string = f"{utime_first_str[:13]}{sep}{utime_last_str[:13]}"
-                        ans = [_[3:] for _ in ans]
-
-                        if time_range < MINUTE:
-
-                            self.offset_string = f"{utime_first_str[:16]}{sep}{utime_last_str[:16]}"
-                            ans = [_[3:] for _ in ans]
-
-                            if time_range < 1.:
-                                self.offset_string = f"{utime_first_str[:19]}{sep}{utime_last_str[:19]}"
-                                ans = [_[2:] for _ in ans]
+            utimes_str = self.format_ticks_cross_year(time_range, utimes, utimes_str)
 
         # ===== strip the right side of the tick labels
-        # count the number of non-zero digits after "."
-        ndigits = [len(_.split('.')[1].rstrip("Z").rstrip('0')) for _ in ans]
-        ndigit = max(ndigits)
-        if ndigit > 0:
-            # remove sub second zeros,
-            # make sure all ticks have the same number of digits after .
-            ans = [_.split('.')[0] + "." + _.split('.')[1][:ndigit] for _ in ans]
-        else:
-            # remove 00...0Z on the right hand side of the label
-            ans = [_.rstrip('Z').rstrip('0').rstrip('.') for _ in ans]
+        utimes_str = self.strip_ticklabels(utimes_str)
 
-            if np.all([_.endswith(':00') for _ in ans]):
-                # seconds are all ":00",  not needed
-                ans = [_[:-3] for _ in ans]
+        return utimes_str
 
-                if np.all([_.endswith(':00') for _ in ans]):
-                    # minutes not needed
-                    ans = [_[:-3] for _ in ans]
+    def format_ticks_same_year(self, utimes, utimes_str):
+        # year is the same for all ticks; move year name to offset_string and remove it from ticklabels
+        self.offset_string = f"{utimes[0].year:04d}"
+        utimes_str = [_[5:] for _ in utimes_str]
+        if utimes[0].month == utimes[-1].month:
+            # month is the same for all ticks; move it name to offset_string and remove it from ticklabels
+            self.offset_string += f"-{utimes[0].month:02d}"
+            utimes_str = [_[3:] for _ in utimes_str]
 
-                    if np.all([_.endswith('T00') for _ in ans]):
-                        # hours not needed
-                        ans = [_[:-3] for _ in ans]
-
-                        if np.all([_.endswith('-01') for _ in ans]):
-                            # days not needed
-                            ans = [_[:-3] for _ in ans]
-
-                            if np.all([_.endswith('-01') for _ in ans]):
-                                # months not needed
-                                ans = [_[:-3] for _ in ans]
-
-        return ans
-
-    def __call__(self, timevalue, pos=None):
-        # format the dynamic ticker on top of the window
-        ans = str(UTCFromTimestamp(timevalue))
-        if self.range_separator in self.offset_string:
-            beg, end = self.offset_string.split(self.range_separator)
-            ans = ans.split(beg)[-1].split(end)[-1]
-
-        else:
-            ans = ans.split(self.offset_string)[-1]
-        return ans
-
-
-class JuldayTimeFormatter(Formatter):
-    offset_string: str = ""
-    range_separator = "~"
-
-    def get_offset(self):
-        return self.offset_string
-
-    def format_ticks(self, timevalues):
-        self.set_locs(timevalues)
-        utimes = [UTCFromTimestamp(timevalue) for timevalue in timevalues]
-        time_range = timevalues[-1] - timevalues[0]
-        ans = [f"{_.year:04d}-{_.julday:03d}T{_.hour:02d}:{_.minute:02d}:{_.second:02d}.{_.microsecond*1e6:06.0f}Z" for _ in utimes]
-        self.offset_string = ""
-
-        # ===== strip the left side of the tick labels
-        if utimes[0].year == utimes[-1].year:
-            # year is the same for all ticks; move year name to offset_string and remove it from ticklabels
-            self.offset_string = f"{utimes[0].year:04d}"
-            ans = [_[5:] for _ in ans]
-
-            if utimes[0].julday == utimes[-1].julday:
-                # julday is the same for all ticks; move it name to offset_string and remove it from ticklabels
-                self.offset_string += f"-{utimes[0].julday:03d}"
-                ans = [_[3:] for _ in ans]
+            if utimes[0].day == utimes[-1].day:
+                # day is the same for all ticks; move it name to offset_string and remove it from ticklabels
+                self.offset_string += f"-{utimes[0].day:02d}"
+                utimes_str = [_[3:] for _ in utimes_str]
 
                 if utimes[0].hour == utimes[-1].hour:
                     # hour is the same for all ticks; move it name to offset_string and remove it from ticklabels
                     self.offset_string += f"T{utimes[0].hour:02d}"
-                    ans = [":".join(_.split(':')[1:]) for _ in ans]
+                    utimes_str = [":".join(_.split(':')[1:]) for _ in utimes_str]
 
                     if utimes[0].minute == utimes[-1].minute:
                         # minute is the same for all ticks;
                         # move it name to offset_string and remove it from ticklabels
                         self.offset_string += f":{utimes[0].minute:02d}"
-                        ans = [_.split(':')[-1] for _ in ans]
+                        utimes_str = [_.split(':')[-1] for _ in utimes_str]
 
                         if utimes[0].second == utimes[-1].second:
                             # second is the same for all ticks;
                             # move it name to offset_string and remove it from ticklabels
                             self.offset_string += f":{utimes[0].second:02d}"
-                            ans = ["." + _.split('.')[1] for _ in ans]
-        elif time_range < YEAR:
-            # year is not the same for all ticks
-            # maybe we are looking a small time range but
-            # overlapping the start of the year
-            # year precision is not needed
-            # => move start and end times to offset_string
-            # and display only the required accuracy in tick labels
-            utime_first_str = str(utimes[0])
-            utime_last_str = str(utimes[-1])
-            sep = self.range_separator
-            self.offset_string = f"{utime_first_str[:4]}{sep}{utime_last_str[:4]}"
-            ans = [_[5:] for _ in ans]
+                            utimes_str = ["." + _.split('.')[1] for _ in utimes_str]
+        return utimes_str
 
-            if time_range < 30 * DAY:
+    def format_ticks_cross_year(self, time_range, utimes, utimes_str):
+        # year is not the same for all ticks
+        # maybe we are looking a small time range but
+        # overlapping the start of the year
+        # year precision is not needed
+        # => move start and end times to offset_string
+        # and display only the required accuracy in tick labels
+        utime_first_str = str(utimes[0])
+        utime_last_str = str(utimes[-1])
+        sep = self.range_separator
+        self.offset_string = f"{utime_first_str[:4]}{sep}{utime_last_str[:4]}"
+        utimes_str = [_[5:] for _ in utimes_str]
+        if time_range < 30 * DAY:
 
-                self.offset_string = f"{utime_first_str[:7]}{sep}{utime_last_str[:7]}"
-                ans = [_[3:] for _ in ans]
+            self.offset_string = f"{utime_first_str[:7]}{sep}{utime_last_str[:7]}"
+            utimes_str = [_[3:] for _ in utimes_str]
 
-                if time_range < DAY:
+            if time_range < DAY:
 
-                    self.offset_string = f"{utime_first_str[:10]}{sep}{utime_last_str[:10]}"
-                    ans = [_[3:] for _ in ans]
+                self.offset_string = f"{utime_first_str[:10]}{sep}{utime_last_str[:10]}"
+                utimes_str = [_[3:] for _ in utimes_str]
 
-                    if time_range < HOUR:
+                if time_range < HOUR:
 
-                        self.offset_string = f"{utime_first_str[:13]}{sep}{utime_last_str[:13]}"
-                        ans = [_[3:] for _ in ans]
+                    self.offset_string = f"{utime_first_str[:13]}{sep}{utime_last_str[:13]}"
+                    utimes_str = [_[3:] for _ in utimes_str]
 
-                        if time_range < MINUTE:
+                    if time_range < MINUTE:
 
-                            self.offset_string = f"{utime_first_str[:16]}{sep}{utime_last_str[:16]}"
-                            ans = [_[3:] for _ in ans]
+                        self.offset_string = f"{utime_first_str[:16]}{sep}{utime_last_str[:16]}"
+                        utimes_str = [_[3:] for _ in utimes_str]
 
-                            if time_range < 1.:
-                                self.offset_string = f"{utime_first_str[:19]}{sep}{utime_last_str[:19]}"
-                                ans = [_[2:] for _ in ans]
+                        if time_range < 1.:
+                            self.offset_string = f"{utime_first_str[:19]}{sep}{utime_last_str[:19]}"
+                            utimes_str = [_[2:] for _ in utimes_str]
+        return utimes_str
 
-        # ===== strip the right side of the tick labels
+    def strip_ticklabels(self, utimes_str):
         # count the number of non-zero digits after "."
-        ndigits = [len(_.split('.')[1].rstrip("Z").rstrip('0')) for _ in ans]
+
+        ndigits = [len(_.split('.')[1].rstrip("Z").rstrip('0')) for _ in utimes_str]
         ndigit = max(ndigits)
         if ndigit > 0:
             # remove sub second zeros,
             # make sure all ticks have the same number of digits after .
-            ans = [_.split('.')[0] + "." + _.split('.')[1][:ndigit] for _ in ans]
+            utimes_str = [_.split('.')[0] + "." + _.split('.')[1][:ndigit] for _ in utimes_str]
         else:
             # remove 00...0Z on the right hand side of the label
-            ans = [_.rstrip('Z').rstrip('0').rstrip('.') for _ in ans]
+            utimes_str = [_.rstrip('Z').rstrip('0').rstrip('.') for _ in utimes_str]
 
-            if np.all([_.endswith(':00') for _ in ans]):
+            if np.all([_.endswith(':00') for _ in utimes_str]):
                 # seconds are all ":00",  not needed
-                ans = [_[:-3] for _ in ans]
+                utimes_str = [_[:-3] for _ in utimes_str]
 
-                if np.all([_.endswith(':00') for _ in ans]):
+                if np.all([_.endswith(':00') for _ in utimes_str]):
                     # minutes not needed
-                    ans = [_[:-3] for _ in ans]
+                    utimes_str = [_[:-3] for _ in utimes_str]
 
-                    if np.all([_.endswith('T00') for _ in ans]):
+                    if np.all([_.endswith('T00') for _ in utimes_str]):
                         # hours not needed
-                        ans = [_[:-3] for _ in ans]
+                        utimes_str = [_[:-3] for _ in utimes_str]
 
-                        if np.all([_.endswith('-01') for _ in ans]):
+                        if np.all([_.endswith('-01') for _ in utimes_str]):
                             # days not needed
-                            ans = [_[:-3] for _ in ans]
+                            utimes_str = [_[:-3] for _ in utimes_str]
 
-                            if np.all([_.endswith('-01') for _ in ans]):
+                            if np.all([_.endswith('-01') for _ in utimes_str]):
                                 # months not needed
-                                ans = [_[:-3] for _ in ans]
-
-        return ans
+                                utimes_str = [_[:-3] for _ in utimes_str]
+        return utimes_str
 
     def __call__(self, timevalue, pos=None):
         # format the dynamic ticker on top of the window
@@ -464,6 +352,89 @@ class JuldayTimeFormatter(Formatter):
         else:
             ans = ans.split(self.offset_string)[-1]
         return ans
+
+
+class JuldayTimeFormatter(CalendarTimeFormatter):
+
+    def format_ticks(self, timevalues):
+        self.set_locs(timevalues)
+        utimes = [UTCFromTimestamp(timevalue) for timevalue in timevalues]
+        time_range = timevalues[-1] - timevalues[0]
+        utimes_str = [f"{_.year:04d}-{_.julday:03d}T{_.hour:02d}:{_.minute:02d}:{_.second:02d}.{_.microsecond*1e6:06.0f}Z" for _ in utimes]
+        self.offset_string = ""
+
+        # ===== strip the left side of the tick labels
+        if utimes[0].year == utimes[-1].year:
+            utimes_str = self.format_ticks_same_year(utimes, utimes_str)
+
+        elif time_range < YEAR:
+            utimes_str = self.format_ticks_cross_year(time_range, utimes, utimes_str)
+
+        # ===== strip the right side of the tick labels
+        # count the number of non-zero digits after "."
+        utimes_str = self.strip_ticklabels(utimes_str)
+
+        return utimes_str
+
+    def strip_ticklabels(self, utimes_str):
+        ndigits = [len(_.split('.')[1].rstrip("Z").rstrip('0')) for _ in utimes_str]
+        ndigit = max(ndigits)
+        if ndigit > 0:
+            # remove sub second zeros,
+            # make sure all ticks have the same number of digits after .
+            utimes_str = [_.split('.')[0] + "." + _.split('.')[1][:ndigit] for _ in utimes_str]
+        else:
+            # remove 00...0Z on the right hand side of the label
+            utimes_str = [_.rstrip('Z').rstrip('0').rstrip('.') for _ in utimes_str]
+
+            if np.all([_.endswith(':00') for _ in utimes_str]):
+                # seconds are all ":00",  not needed
+                utimes_str = [_[:-3] for _ in utimes_str]
+
+                if np.all([_.endswith(':00') for _ in utimes_str]):
+                    # minutes not needed
+                    utimes_str = [_[:-3] for _ in utimes_str]
+
+                    if np.all([_.endswith('T00') for _ in utimes_str]):
+                        # hours not needed
+                        utimes_str = [_[:-3] for _ in utimes_str]
+
+                        if np.all([_.endswith('-01') for _ in utimes_str]):
+                            # days not needed
+                            utimes_str = [_[:-3] for _ in utimes_str]
+
+                            if np.all([_.endswith('-01') for _ in utimes_str]):
+                                # months not needed
+                                utimes_str = [_[:-3] for _ in utimes_str]
+        return utimes_str
+
+    def format_ticks_same_year(self, utimes, utimes_str):
+        # year is the same for all ticks; move year name to offset_string and remove it from ticklabels
+        self.offset_string = f"{utimes[0].year:04d}"
+        utimes_str = [_[5:] for _ in utimes_str]
+        if utimes[0].julday == utimes[-1].julday:
+            # julday is the same for all ticks; move it name to offset_string and remove it from ticklabels
+            self.offset_string += f"-{utimes[0].julday:03d}"
+            utimes_str = [_[3:] for _ in utimes_str]
+
+            if utimes[0].hour == utimes[-1].hour:
+                # hour is the same for all ticks; move it name to offset_string and remove it from ticklabels
+                self.offset_string += f"T{utimes[0].hour:02d}"
+                utimes_str = [":".join(_.split(':')[1:]) for _ in utimes_str]
+
+                if utimes[0].minute == utimes[-1].minute:
+                    # minute is the same for all ticks;
+                    # move it name to offset_string and remove it from ticklabels
+                    self.offset_string += f":{utimes[0].minute:02d}"
+                    utimes_str = [_.split(':')[-1] for _ in utimes_str]
+
+                    if utimes[0].second == utimes[-1].second:
+                        # second is the same for all ticks;
+                        # move it name to offset_string and remove it from ticklabels
+                        self.offset_string += f":{utimes[0].second:02d}"
+                        utimes_str = ["." + _.split('.')[1] for _ in utimes_str]
+        return utimes_str
+
 
 class SubSecTimeFormatter(Formatter):
     offset_string: str = r"$^{*}$[s]"
