@@ -478,7 +478,7 @@ class MicroSecTimeFormatter(SubSecTimeFormatter):
 
 
 def xy_ticker(
-        ax: axes._subplots.Subplot,
+        ax,  # : axes._subplots.Subplot,
         axis: str = 'x',
         major_locator: Union[Locator, None] = None,
         minor_locator: Union[Locator, None] = None,
@@ -510,7 +510,7 @@ def xy_ticker(
             ax.yaxis.set_minor_locator(minor_locator)
 
 
-def timetick(ax: axes._subplots.Subplot,
+def timetick(ax,  # : axes._subplots.Subplot,
              axis: str='x',
              major: bool=True,
              minor: bool=True,
@@ -525,7 +525,7 @@ def timetick(ax: axes._subplots.Subplot,
         formatter=CalendarTimeFormatter())
 
 
-def juldaytimetick(ax: axes._subplots.Subplot,
+def juldaytimetick(ax,  # : axes._subplots.Subplot,
              axis: str='x',
              major: bool=True,
              minor: bool=True,
@@ -540,7 +540,7 @@ def juldaytimetick(ax: axes._subplots.Subplot,
         formatter=JuldayTimeFormatter())
 
 def millitimetick(
-        ax: axes._subplots.Subplot,
+        ax,  # : axes._subplots.Subplot,
         axis: str='x',
         major: bool=True,
         minor: bool=True):
@@ -553,7 +553,7 @@ def millitimetick(
         formatter=MilliSecTimeFormatter())
 
 
-def microtimetick(ax: axes._subplots.Subplot,
+def microtimetick(ax,  # : axes._subplots.Subplot,
              axis: str='x',
              major: bool=True,
              minor: bool=True,
