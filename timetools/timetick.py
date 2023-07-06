@@ -1,3 +1,4 @@
+from typing import Optional
 from functools import lru_cache
 from matplotlib import ticker, axes
 from matplotlib.ticker import Formatter, Locator, MaxNLocator, AutoLocator, AutoMinorLocator
@@ -217,8 +218,16 @@ class CalendarTimeFormatter(Formatter):
     offset_string: str = ""
     range_separator = "~"
 
+    def __init__(self, force_offset_string: Optional[str]=None, *args, **kwargs):
+        Formatter.__init__(self, *args, **kwargs)
+        self.force_offset_string = force_offset_string
+
     def get_offset(self):
-        return self.offset_string
+        ans = self.offset_string
+        if self.force_offset_string is not None:
+            ans = self.force_offset_string
+
+        return ans
 
     def format_ticks(self, timevalues):
         self.set_locs(timevalues)
@@ -515,14 +524,15 @@ def timetick(ax,  # : axes._subplots.Subplot,
              major: bool=True,
              minor: bool=True,
              major_maxticks: int=10,
-             minor_maxticks: int=20):
+             minor_maxticks: int=20,
+             force_offset_string: Optional[str]=None):
 
     xy_ticker(
         ax=ax,
         axis=axis,
         major_locator=TimeLocator(maxticks=major_maxticks) if major else None,
         minor_locator=TimeLocator(maxticks=minor_maxticks) if minor else None,
-        formatter=CalendarTimeFormatter())
+        formatter=CalendarTimeFormatter(force_offset_string=force_offset_string))
 
 
 def juldaytimetick(ax,  # : axes._subplots.Subplot,

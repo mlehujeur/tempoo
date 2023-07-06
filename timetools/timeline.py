@@ -15,8 +15,10 @@ if __name__ == "__main__":
         try:
             now = UTCFromTimestamp(time.time())
             fig = plt.figure(figsize=(18, 4))
-            fig.subplots_adjust(left=0.025, right=1. - 0.01)
+            fig.subplots_adjust(left=0.3, right=1. - 0.01)
             ax = plt.gca()
+
+            yticks = {}
 
             with open(timeline_file, 'r') as fid:
                 for n, l in enumerate(fid):
@@ -44,10 +46,19 @@ if __name__ == "__main__":
                         ha="left", 
                         va="bottom",
                         color=hdl.get_color())
+                    try:
+                        yticks[linenumber] += " / " + title
+                    except KeyError:
+                        yticks[linenumber] = f"{linenumber:03d} {title}"
+
             ylim = ax.get_ylim()
             ax.plot(now.timestamp * np.ones(2), ylim, 'r--')
             ax.grid(True)
-            timetick(plt.gca())
+            timetick(ax)
+
+            ax.set_yticks(list(yticks.keys()))
+            ax.set_yticklabels(list(yticks.values()))
+
             plt.ion()
             plt.show()
             ans = input('q=quit, else redraw')
