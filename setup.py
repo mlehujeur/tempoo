@@ -1,7 +1,7 @@
 import setuptools
 import os
 
-# fuck distutils2
+
 version_file = os.path.join('timetools', 'version.py')
 if not os.path.isfile(version_file):
     raise IOError(version_file)
@@ -20,10 +20,10 @@ with open("Readme.md", "r") as fh:
 
 
 setuptools.setup(
-    name="timetools", # Replace with your own username
+    name="timetools", 
     version=__version__,
     author="Maximilien Lehujeur",
-    author_email="maximilien.lehujeur@gmail.com",
+    author_email="maximilien.lehujeur@univ-eiffel.fr",
     description="",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -31,9 +31,13 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Operating System :: Linux"],
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: Microsoft :: WINDOWS ",
+        ],
     python_requires='>=3.7, <3.11',
     install_requires=[
         'numpy', 'matplotlib', 'pytest', "pytz"],
-    scripts=["timetools/bin/doy",
-             "timetools/timeline.py"])
+    scripts=[os.path.join("timetools", "bin", "doy"),
+             os.path.join("timetools", "timeline.py"),
+    ])
+
