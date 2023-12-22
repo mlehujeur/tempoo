@@ -32,7 +32,7 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: POSIX :: Linux",
-        "Operating System :: Microsoft :: WINDOWS ",
+        "Operating System :: Microsoft :: Windows",
         ],
     python_requires='>=3.7, <3.11',
     install_requires=[
