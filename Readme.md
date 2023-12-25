@@ -1,4 +1,4 @@
-# Timetools
+# Tempoo
 
 Install 
 ```bash 
