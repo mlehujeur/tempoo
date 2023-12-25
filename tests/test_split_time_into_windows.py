@@ -1,5 +1,5 @@
-from timetools.utc import UTC, UTCFromTimestamp
-from timetools.windows import split_time_into_windows
+from tempoo.utc import UTC, UTCFromTimestamp
+from tempoo.windows import split_time_into_windows
 import pytest
 
 

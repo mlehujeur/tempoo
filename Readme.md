@@ -2,5 +2,5 @@
 
 Install 
 ```bash 
-pip install timetools
+pip install tempoo
 ```

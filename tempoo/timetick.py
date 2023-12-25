@@ -2,7 +2,7 @@ from typing import Optional
 from functools import lru_cache
 from matplotlib import ticker, axes
 from matplotlib.ticker import Formatter, Locator, MaxNLocator, AutoLocator, AutoMinorLocator
-from timetools.utc import *
+from tempoo.utc import *
 import numpy as np
 
 MINUTE = 60.

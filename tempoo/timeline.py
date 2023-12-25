@@ -3,8 +3,8 @@ import sys, glob, os, time
 import curses
 import numpy as np
 import matplotlib.pyplot as plt
-from timetools.utc import UTCFromStr, UTCFromTimestamp
-from timetools.timetick import timetick
+from tempoo.utc import UTCFromStr, UTCFromTimestamp
+from tempoo.timetick import timetick
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ help_message = """daysofyear (doy) : list days in a year, use grep
 
 if __name__ == "__main__":
     import datetime
-    from timetools.utc import UTC, UTCFromTimestamp, DAY
+    from tempoo.utc import UTC, UTCFromTimestamp, DAY
     import sys
 
     day_delta = datetime.timedelta(seconds=DAY)

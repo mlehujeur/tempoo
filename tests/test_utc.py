@@ -1,5 +1,5 @@
 import datetime
-from timetools.utc import UTC, UTCFromJulday, UTCFromTimestamp, UTCFromStr
+from tempoo.utc import UTC, UTCFromJulday, UTCFromTimestamp, UTCFromStr
 import numpy as np
 import pickle
 import pytest

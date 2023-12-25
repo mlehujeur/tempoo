@@ -2,7 +2,7 @@ import setuptools
 import os
 
 
-version_file = os.path.join('timetools', 'version.py')
+version_file = os.path.join('tempoo', 'version.py')
 if not os.path.isfile(version_file):
     raise IOError(version_file)
 
@@ -20,7 +20,7 @@ with open("Readme.md", "r") as fh:
 
 
 setuptools.setup(
-    name="timetools", 
+    name="tempoo", 
     version=__version__,
     author="Maximilien Lehujeur",
     author_email="maximilien.lehujeur@univ-eiffel.fr",
@@ -37,7 +37,7 @@ setuptools.setup(
     python_requires='>=3.7, <3.11',
     install_requires=[
         'numpy', 'matplotlib', 'pytest', "pytz"],
-    scripts=[os.path.join("timetools", "bin", "doy"),
-             os.path.join("timetools", "timeline.py"),
+    scripts=[os.path.join("tempoo", "bin", "doy"),
+             os.path.join("tempoo", "timeline.py"),
     ])
 
