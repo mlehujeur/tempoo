@@ -24,6 +24,7 @@ setuptools.setup(
     version=__version__,
     author="Maximilien Lehujeur",
     author_email="maximilien.lehujeur@univ-eiffel.fr",
+    license="MIT",
     description="",
     long_description=long_description,
     long_description_content_type="text/markdown",
