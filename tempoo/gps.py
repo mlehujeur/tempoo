@@ -1,9 +1,33 @@
 from tempoo.utc import UTCFromTimestamp, UTC
 
-#
+
+"""
+values 
+in secs ^
+        |
+        |                      TAI   GPS=TAI -19s
+        |                    +     * 
+        |                  +     *
+        |                +     * 
+        |              +     * 
+        |            +     *         . UTC[date] = GPS - cumulative_leap_seconds[date] 
+        |          +     *   .     .         UTC[1980] = GPS -0s
+        |        + |   *   . .   .           UTC[1988] = GPS -5s
+        |      +   | *   .   . .             UTC[2023] = GPS -18s 
+        |    + .   * . .     .               ... future leap corrections not published yet
+        |  + . . . | .
+        |+ .   .   | 
+        -------------------------------------> dates
+                 6/1/1980    ^
+                             |leap correction (+1 or -1)
+                              to keep the lag between UTC and UT1 < 0.9s
+""" 
+
+# GPS origin expressed in UTC time reference system, no leap correction because it was 0 by definition
+GPS_EPOCH = UTC(1980, 1, 6, 0, 0, 0) 
+# or equivalently
 # GPS_EPOCH = datetime.datetime(
-#     1980, 1, 6, tzinfo=datetime.timezone.utc)   
-GPS_EPOCH = UTC(1980, 1, 6, 0, 0, 0) # GPS origin expressed in UTC time reference system
+#     1980, 1, 6, tzinfo=datetime.timezone.utc)     
  
 def cumulative_leap_seconds(timestamp: float):
 
