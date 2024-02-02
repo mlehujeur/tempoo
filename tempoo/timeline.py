@@ -38,6 +38,7 @@ if __name__ == "__main__":
                     hdl, = ax.plot(
                         [start.timestamp, end.timestamp],
                         [linenumber, linenumber],
+                        '|-',
                         linewidth=3,
                         color=[r, g, b])
                     ax.text(
