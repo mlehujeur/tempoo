@@ -35,7 +35,7 @@ setuptools.setup(
         "Operating System :: POSIX :: Linux",
         "Operating System :: Microsoft :: Windows",
         ],
-    python_requires='>=3.7, <3.11',
+    python_requires='>=3.7, <3.13',
     install_requires=[
         'numpy', 'matplotlib', 'pytest', "pytz"],
     scripts=[os.path.join("tempoo", "bin", "doy"),
