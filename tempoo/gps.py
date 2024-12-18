@@ -76,9 +76,11 @@ def cumulative_leap_seconds(timestamp: float):
         cumulative_leap_seconds = 17.
     elif timestamp < UTC(2024, 1, 1).timestamp:
         cumulative_leap_seconds = 18.
+    elif timestamp < UTC(2025, 1, 1).timestamp:
+        cumulative_leap_seconds = 18.
     else:
         raise NotImplementedError(
-            'leap second corrections after 2024/01/01 not announced yet')        
+            'leap second corrections after 2025/01/01 not announced yet')        
     return cumulative_leap_seconds
     
                    
