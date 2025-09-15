@@ -479,11 +479,20 @@ class MilliSecTimeFormatter(SubSecTimeFormatter):
     tick_extension: str = "" # r"$^{*}$"
     scale: float = 1e3
 
+class KiloHertzFreqFormatter(SubSecTimeFormatter):
+    offset_string: str = "$ [kHz] $" # r"$^{*}$[ms]"
+    tick_extension: str = "" # r"$^{*}$"
+    scale: float = 1e-3
 
 class MicroSecTimeFormatter(SubSecTimeFormatter):
     offset_string: str = r"$ [\mu s] $"
     tick_extension: str = ""  # r"$^{*}$"
     scale: float = 1e6
+
+class MegaHertzFreqFormatter(SubSecTimeFormatter):
+    offset_string: str = "$ [MHz] $" # r"$^{*}$[ms]"
+    tick_extension: str = "" # r"$^{*}$"
+    scale: float = 1e-6
 
 
 def xy_ticker(
@@ -553,14 +562,19 @@ def millitimetick(
         ax,  # : axes._subplots.Subplot,
         axis: str='x',
         major: bool=True,
-        minor: bool=True):
-
+        minor: bool=True,
+        offset_string: str="[ms]"):
+    
+    formatter = MilliSecTimeFormatter()
+    formatter.offset_string = offset_string
+    
     xy_ticker(
         ax=ax,
         axis=axis,
         major_locator=AutoLocator() if major else None,
         minor_locator=AutoMinorLocator() if minor else None,
-        formatter=MilliSecTimeFormatter())
+        formatter=formatter)
+
 
 
 def microtimetick(ax,  # : axes._subplots.Subplot,
@@ -568,14 +582,55 @@ def microtimetick(ax,  # : axes._subplots.Subplot,
              major: bool=True,
              minor: bool=True,
              major_maxticks: int=10,
-             minor_maxticks: int=20):
+             minor_maxticks: int=20,
+             offset_string: str=r"$ [\mu s] $"):
+
+
+    formatter = MicroSecTimeFormatter()
+    formatter.offset_string = offset_string
 
     xy_ticker(
         ax=ax,
         axis=axis,
         major_locator=AutoLocator() if major else None,
         minor_locator=AutoMinorLocator() if minor else None,
-        formatter=MicroSecTimeFormatter())
+        formatter=formatter)
+
+
+def kilofreqtick(
+        ax,  # : axes._subplots.Subplot,
+        axis: str = 'x',
+        major: bool = True,
+        minor: bool = True,
+        offset_string: str = "[kHz]"):
+
+    formatter = KiloHertzFreqFormatter()
+    formatter.offset_string = offset_string
+
+    xy_ticker(
+        ax=ax,
+        axis=axis,
+        major_locator=AutoLocator() if major else None,
+        minor_locator=AutoMinorLocator() if minor else None,
+        formatter=formatter)
+
+
+def megafreqtick(
+        ax,  # : axes._subplots.Subplot,
+        axis: str = 'x',
+        major: bool = True,
+        minor: bool = True,
+        offset_string: str = "[MHz]"):
+
+    formatter = MegaHertzFreqFormatter()
+    formatter.offset_string = offset_string
+
+    xy_ticker(
+        ax=ax,
+        axis=axis,
+        major_locator=AutoLocator() if major else None,
+        minor_locator=AutoMinorLocator() if minor else None,
+        formatter=formatter)
 
 
 if __name__ == '__main__':

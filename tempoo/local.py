@@ -30,7 +30,6 @@ def frenchdatetime(
         hour=hour, minute=minute, second=second, 
         microsecond=microsecond).astimezone(PARIS_TIME_ZONE)
 
-
 def utc2french(utcdatetime: datetime.datetime):
     """
     Convert utc datetime to local time in Paris time zone, 
@@ -68,7 +67,23 @@ def french2utc(frenchdatetime: datetime.datetime):
         raise ValueError(f'time zone error : {frenchdatetime.tzinfo.__repr__()} != {PARIS_TIME_ZONE.__repr__()}')
 
     return frenchdatetime.astimezone(datetime.timezone.utc)
-
+    
+    
+def timestamp2utc(timestamp):
+    """timestamp is the same for all time zones!
+    return an datetime.datetime object that is informed that the time zone is utc
+    """
+    d = datetime.datetime.fromtimestamp(timestamp).astimezone(datetime.timezone.utc)
+    return d
+    
+    
+def timestamp2french(timestamp):
+    """timestamp is the same for all time zones!
+    return an datetime.datetime object that is informed that the time zone is PARIS/EUROPE
+    this will only change the string representation of the object
+    """
+    return utc2french(timestamp2utc(timestamp))
+       
 
 if __name__ == "__main__":
 
