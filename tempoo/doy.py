@@ -1,14 +1,14 @@
 #!/usr/bin/env python
+import datetime
+from tempoo.utc import UTC, UTCFromTimestamp, DAY
+import sys
+
 
 help_message = """daysofyear (doy) : list days in a year, use grep
     argument 1 : year
 """
 
-if __name__ == "__main__":
-    import datetime
-    from tempoo.utc import UTC, UTCFromTimestamp, DAY
-    import sys
-
+def main():
     day_delta = datetime.timedelta(seconds=DAY)
     weekdays = "mon.tue.wed.thu.fri.sat.sun".split('.')
     months = "jan.feb.mar.apr.may.jun.jul.aug.sep.oct.nov.dec".split('.')
@@ -26,3 +26,7 @@ if __name__ == "__main__":
         (t + datetime.timedelta(seconds=24 * 3600.)).timestamp
         t + 24 * 3600.
         t = UTCFromTimestamp((t + datetime.timedelta(seconds=24 * 3600.)).timestamp)
+
+
+if __name__ == "__main__":        
+    main()

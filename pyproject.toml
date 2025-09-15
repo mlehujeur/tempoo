@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tempoo"
+version = "1.2.3"  # WARNING PLEASE SYNC MANUALLY WITH VERSION.PY
+description = ""
+readme = "Readme.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Maximilien Lehujeur", email = "maximilien.lehujeur@univ-eiffel.fr" }
+]
+requires-python = ">=3.7,<3.13"
+dependencies = [
+  "numpy",
+  "matplotlib",
+  "pytest",
+  "pytz"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows"
+]
+
+[project.scripts]
+doy = "tempoo.doy:main"
+timeline = "tempoo.timeline:main"
+

@@ -7,7 +7,7 @@ from tempoo.utc import UTCFromStr, UTCFromTimestamp
 from tempoo.timetick import timetick
 
 
-if __name__ == "__main__":
+def main():
 
     timeline_file = sys.argv[1]
 
@@ -69,3 +69,7 @@ if __name__ == "__main__":
             plt.close(fig)
         except KeyboardInterrupt:
             sys.exit(1)
+          
+            
+if __name__ == "__main__":
+    main()            
